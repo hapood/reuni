@@ -1,0 +1,28 @@
+{
+  "name": "arena",
+  "version": "0.0.1-alpha",
+  "description": "Dynamic state container for JavaScript apps",
+  "scripts": {
+    "prettier": "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\"",
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hapood/redux-arena.git"
+  },
+  "keywords": ["arena", "immutable", "observable", "react", "reactjs"],
+  "author": "Hapood Wang",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/hapood/arena/issues"
+  },
+  "homepage": "https://github.com/hapood/arena#readme",
+  "peerDependencies": {
+    "react": ">=16"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "prettier": "^1.9.2",
+    "typescript": "^2.6.2"
+  }
+}
