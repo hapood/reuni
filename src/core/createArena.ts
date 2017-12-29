@@ -6,19 +6,14 @@ export class ArenaStore {
   sceneTree: SceneTree<any>;
   sceneTreeDict: StateTreeDict;
 
-  constructor(stateTree?: SceneTree<any>) {
-    if (stateTree != null) {
-      this.sceneTree = stateTree;
-      this.sceneTreeDict = buildStateTreeDict();
-    } else {
-      let sceneId = genId();
-      this.sceneTree = new SceneTree(sceneId, "root", {});
-      this.sceneTreeDict = {
-        [sceneId]: {
-          path: [sceneId]
-        }
-      };
-    }
+  constructor() {
+    let sceneId = genId();
+    this.sceneTree = new SceneTree(sceneId, "root", {});
+    this.sceneTreeDict = {
+      [sceneId]: {
+        path: [sceneId]
+      }
+    };
   }
 
   addScene<S, A>(scene: Scene<S, A>, parentId?: string) {

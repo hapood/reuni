@@ -58,6 +58,16 @@ export default class SceneTree<S> {
     }
   }
 
+  subscribeR(path: string[], keyList: string[], cb: SceneObserver){
+    if (path.length === 0) {
+      throw new Error(
+        `Error occurred when adding subscriber in scene [${
+          this.id
+        }], child path can not be []`
+      );
+    }
+  }
+
   notifyAll() {
     this.observers.forEach(item => {
       item.cb();
