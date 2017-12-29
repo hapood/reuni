@@ -3,3 +3,4 @@ coverage/
 build/
 example/build/
 tmp/
+*.log
