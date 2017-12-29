@@ -1,12 +1,14 @@
 export type StateTreeDict = Record<
   string,
   {
-    path: symbol[];
+    path: string[];
   }
 >;
 
 export type Scene<S, A> = {
-  id: string;
+  name: string;
   state: S;
   actions: A;
 };
+
+export type SceneObserver = () => void;
