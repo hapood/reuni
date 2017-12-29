@@ -1,0 +1,59 @@
+Arguments: 
+  C:\Program Files\nodejs\node.exe C:\Program Files (x86)\Yarn\bin\yarn.js
+
+PATH: 
+  C:\Program Files (x86)\Google\Chrome\Application;C:\ProgramData\Oracle\Java\javapath;C:\Program Files\Java\jdk1.8.0_73\jdk1.8.0_73\bin;C:\Program Files (x86)\AMD APP\bin\x86_64;C:\Program Files (x86)\AMD APP\bin\x86;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static;C:\Program Files\TortoiseSVN\bin;C:\Program Files\nodejs;C:\Program Files\gradle-2.11\bin;C:\TDM-GCC-64\bin;C:\Program Files (x86)\scala\bin;C:\Program Files (x86)\sbt\\bin;C:\Windows\system32\config\systemprofile\.dnx\bin;C:\Program Files\Microsoft DNX\Dnvm\;C:\Go\bin;;C:\Program Files (x86)\Microsoft VS Code\bin;C:\Program Files\Docker Toolbox;D:\Program Files (x86)\Yarn\bin;C:\Users\wangtao\AppData\Roaming\npm;C:\adb;C:\Program Files (x86)\GitExtensions\;C:\Program Files\nodejs\;C:\Program Files (x86)\Yarn\bin;C:\Program Files (x86)\Windows Kits\8.1\Windows Performance Toolkit\;;C:\Program Files\Docker Toolbox;D:\Program Files (x86)\Yarn\bin;C:\Program Files\Microsoft VS Code\bin;C:\Users\wangtao\AppData\Roaming\npm;C:\Users\wangtao\AppData\Local\Yarn\bin
+
+Yarn version: 
+  1.3.2
+
+Node version: 
+  9.2.0
+
+Platform: 
+  win32 x64
+
+npm manifest: 
+  {
+    "name": "arena",
+    "version": "0.0.1-alpha",
+    "description": "Dynamic state container for JavaScript apps",
+    "scripts": {
+      "prettier": "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\"",
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/hapood/redux-arena.git"
+    },
+    "keywords": ["arena", "immutable", "observable", "react", "reactjs"],
+    "author": "Hapood Wang",
+    "license": "Apache-2.0",
+    "bugs": {
+      "url": "https://github.com/hapood/arena/issues"
+    },
+    "homepage": "https://github.com/hapood/arena#readme",
+    "peerDependencies": {
+      "react": ">=16"
+    },
+    "dependencies": {
+    },
+    "devDependencies": {
+      "prettier": "^1.9.2",
+      "typescript": "^2.6.2"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
+
+Trace: 
+  SyntaxError: D:\Projects\arena\package.json: Unexpected token } in JSON at position 216
+      at JSON.parse (<anonymous>)
+      at C:\Program Files (x86)\Yarn\lib\cli.js:770:59
+      at Generator.next (<anonymous>)
+      at step (C:\Program Files (x86)\Yarn\lib\cli.js:92:30)
+      at C:\Program Files (x86)\Yarn\lib\cli.js:103:13
+      at <anonymous>
