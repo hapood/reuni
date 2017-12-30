@@ -1,77 +1,71 @@
-import SceneTree from "./SceneTree";
-import { StateTreeDict, Scene, SceneObserver } from "./types";
+import Node from "./Node";
+import { SceneDict, RawNode, SceneObserver, SceneDictItem } from "./types";
 import { buildStateTreeDict, genId } from "./utils";
 
 export class ArenaStore {
-  sceneTree: SceneTree<any>;
-  sceneTreeDict: StateTreeDict;
+  nodeDict: SceneDict;
+  rootId: string;
 
   constructor() {
     let sceneId = genId();
-    this.sceneTree = new SceneTree(sceneId, "root", {});
-    this.sceneTreeDict = {
-      [sceneId]: {
-        path: [sceneId]
-      }
+    this.rootId = sceneId;
+    let rootNode = new Node(sceneId, "root", null);
+    this.nodeDict = {
+      [sceneId]: { path: [sceneId], ref: rootNode }
     };
   }
 
-  addScene<S, A>(scene: Scene<S, A>, parentId?: string) {
-    let sceneId: string | undefined = undefined;
-    while (sceneId == null) {
-      sceneId = genId();
-      if (this.sceneTreeDict[sceneId] != null) {
-        sceneId = undefined;
-      }
-    }
-    let newScene = new SceneTree(sceneId, scene.name, scene.state);
-    let scenePath: string[];
-    if (parentId == null) {
-      scenePath = [sceneId];
-      this.sceneTreeDict[sceneId] = {
-        path: scenePath
-      };
-    } else {
-      let pScene = this.sceneTreeDict[parentId];
-      if (pScene == null) {
+  addNode(treeNode: RawNode, parentId?: string) {
+    let nodeId: string | undefined = treeNode.id;
+    if (nodeId != null) {
+      if (this.nodeDict[nodeId] != null) {
         throw new Error(
-          `Error occurred when adding scene, parent scene [${parentId}] does not exist.`
+          `Error occurred when adding node, id [${nodeId}] already exist.`
         );
       }
-      scenePath = pScene.path.concat(sceneId);
-      this.sceneTreeDict[sceneId] = {
-        path: scenePath
-      };
+    } else {
+      while (nodeId == null) {
+        nodeId = genId();
+        if (this.nodeDict[nodeId] != null) {
+          nodeId = undefined;
+        }
+      }
     }
-    this.sceneTree.addChild(scenePath, newScene);
-  }
-
-  addSubscriber(sceneId: string, keyList: string[], cb: SceneObserver) {
-    let scene = this.sceneTreeDict[sceneId];
-    if (scene == null) {
+    let nodePath: string[];
+    let pNode: SceneDictItem;
+    if (parentId == null) {
+      pNode = this.nodeDict[this.rootId];
+    } else {
+      pNode = this.nodeDict[parentId];
+    }
+    if (pNode == null) {
       throw new Error(
-        `Error occurred when adding subscriber to scene, scene [${sceneId}] does not exist`
+        `Error occurred when adding node, parent [${parentId}] does not exist.`
       );
     }
-    return this.sceneTree.subscribe(scene.path, keyList, cb);
+    let newNode = new Node(nodeId, treeNode.name, pNode.ref);
+    treeNode.scenes.map(node => newNode.addScene(node));
+    nodePath = pNode.path.concat(nodeId);
+    this.nodeDict[nodeId] = { path: nodePath, ref: newNode };
+    pNode.ref.addChild(nodeId, newNode);
   }
 
-  addSubscriberR(
+  addSubscriber(
     sceneId: string,
     name: string,
     keyList: string[],
     cb: SceneObserver
   ) {
-    let scene = this.sceneTreeDict[sceneId];
-    if (scene == null) {
+    let node = this.nodeDict[sceneId];
+    if (node == null) {
       throw new Error(
-        `Error occurred when adding reverse subscriber to scene, scene [${sceneId}] does not exist`
+        `Error occurred when adding subscriber to node, node [${sceneId}] does not exist.`
       );
     }
-    return this.sceneTree.subscribeR(scene.path, keyList, cb);
+    return node.ref.subscribe(name, keyList, cb);
   }
 }
 
-export default function createArena(stateTree?: SceneTree<any>) {
-  return new ArenaStore(stateTree);
+export default function createArena(stateTree?: Node) {
+  return new ArenaStore();
 }

@@ -1,7 +1,7 @@
-import SceneTree from "./SceneTree";
-import { StateTreeDict } from "./types";
+import Node from "./Node";
+import { SceneDict } from "./types";
 
-export function buildStateTreeDict(): StateTreeDict {
+export function buildStateTreeDict(): SceneDict {
   return {};
 }
 
