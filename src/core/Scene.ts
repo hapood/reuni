@@ -31,12 +31,11 @@ export default class Scene {
       let action = rawScene[key].bind(this.entity);
       actionsDict[key] = actionProxy.bind(this, action);
     });
+    this.actions = actionsDict;
     this.tasks = [];
   }
 
-  addTask(){
-    
-  }
+  addTask() {}
 
   destroy() {
     this.isDestroyed = true;
@@ -74,6 +73,7 @@ export default class Scene {
 
   commit() {
     if (!this.isDestroyed) {
+      this.entity = createSceneEntity(this, this.nextState, this.actions);
       let oldKeys = Object.keys(this.state);
       let newKeys = Object.keys(this.nextState);
       let dirtyKeyDict: Record<string, boolean> = {};
