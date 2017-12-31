@@ -23,15 +23,14 @@ export default class Scene {
       stateDict[key] = rawScene[key];
     });
     this.state = stateDict;
+    Object.keys(stateDict).forEach(key => {
+      actionsDict[key] = rawScene[key];
+    });
+    this.actions = actionsDict;
     this.nextState = Object.assign({}, stateDict);
     this.isDestroyed = false;
     this.node = node;
     this.entity = createSceneEntity(this, stateDict, actionsDict);
-    Object.keys(stateDict).forEach(key => {
-      let action = rawScene[key].bind(this.entity);
-      actionsDict[key] = actionProxy.bind(this, action);
-    });
-    this.actions = actionsDict;
     this.tasks = [];
   }
 
@@ -41,28 +40,23 @@ export default class Scene {
     this.isDestroyed = true;
   }
 
-  getState() {
-    return this.nextState;
-  }
-
   replaceState(state: any) {
     if (!this.isDestroyed) {
+      this.node.addDirtyScenes(this.name);
       this.nextState = state;
     }
   }
 
-  getActions() {
-    return this.actions;
-  }
-
   setValue(key: string, value: string) {
     if (!this.isDestroyed) {
+      this.node.addDirtyScenes(this.name);
       this.nextState[key] = value;
     }
   }
 
   setState(pState: any) {
     if (!this.isDestroyed) {
+      this.node.addDirtyScenes(this.name);
       Object.assign(this.nextState, pState);
     }
   }

@@ -42,16 +42,17 @@ export function createSceneRegister(
 
 export function createSceneEntity(
   scene: Scene,
-  stateDict: any,
-  actionsDict: any
+  state: any,
+  actions: any
 ): SceneAPI {
+  let bindedActions: Record<string, () => void> = {};
   let handler = {
     get: function(target: Scene, name: string) {
-      if (stateDict[name] != null) {
-        return target.getState()[name];
+      if (state[name] != null) {
+        return state[name];
       }
-      if (actionsDict[name] != null) {
-        return target.getActions()[name];
+      if (bindedActions[name] != null) {
+        return bindedActions[name];
       }
       throw new Error(
         `Error occurred while reading scene [${
@@ -60,7 +61,7 @@ export function createSceneEntity(
       );
     },
     set: function(target: Scene, name: string, value: any) {
-      if (stateDict[name] != null) {
+      if (state[name] != null) {
         target.setValue(name, value);
         return true;
       }
@@ -71,7 +72,12 @@ export function createSceneEntity(
       );
     }
   };
-  return new Proxy(scene, handler) as any;
+  let entity = new Proxy(scene, handler);
+  Object.keys(actions).forEach(key => {
+    let bindedAction = actions[key].bind(entity);
+    bindedActions[key] = actionProxy.bind(this, bindedAction);
+  });
+  return entity as any;
 }
 
 export function actionProxy(f: () => void, ...args: any[]) {
