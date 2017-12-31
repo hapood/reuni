@@ -3,20 +3,18 @@ import Node from "./Node";
 export type SceneDictItem = {
   path: string[];
   ref: Node;
+  nameDict: Record<string, string>;
+  name: string;
 };
 
 export type SceneDict = Record<string, SceneDictItem>;
 
-export type RawScene<S, A> = {
-  name: string;
-  state: S;
-  actions: A;
+export type Task = {
+  id: string;
+  isDone: () => boolean;
 };
 
-export type RawNode = {
-  id?: string;
-  name: string;
-  scenes: RawScene<any, any>[];
+export type Observer = {
+  care: Record<string, Record<string, string[]>>;
+  cb: (isValid: boolean) => void;
 };
-
-export type SceneObserver = (keyList: string[]) => void;

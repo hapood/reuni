@@ -1,5 +1,9 @@
 import Node from "./Node";
 import { SceneDict } from "./types";
+import SceneAPI from "../api/Scene";
+import PropertyType from "../api/PropertyType";
+import { ScenePropertyRegister } from "../api/types";
+import Scene from "./Scene";
 
 export function buildStateTreeDict(): SceneDict {
   return {};
@@ -12,4 +16,64 @@ export function genId() {
       .toString(36)
       .substr(2, 9)
   );
+}
+
+export function createSceneRegister(
+  stateDict: any,
+  actionsDict: any
+): ScenePropertyRegister {
+  return function(type: PropertyType, key: string) {
+    switch (type) {
+      case PropertyType.OBSERVABLE:
+        stateDict[key] = true;
+        break;
+      case PropertyType.ACTION:
+        stateDict[key] = true;
+        break;
+      default:
+        throw new Error(
+          `Error occurred while parsing scene [${
+            this.id
+          }], unknown property type [${type}].`
+        );
+    }
+  };
+}
+
+export function createSceneEntity(
+  scene: Scene,
+  stateDict: any,
+  actionsDict: any
+): SceneAPI {
+  let handler = {
+    get: function(target: Scene, name: string) {
+      if (stateDict[name] != null) {
+        return target.getState()[name];
+      }
+      if (actionsDict[name] != null) {
+        return target.getActions()[name];
+      }
+      throw new Error(
+        `Error occurred while reading scene [${
+          scene.name
+        }], unknown property [${name}].`
+      );
+    },
+    set: function(target: Scene, name: string, value: any) {
+      if (stateDict[name] != null) {
+        target.setValue(name, value);
+        return true;
+      }
+      throw new Error(
+        `Error occurred while writting scene [${
+          scene.name
+        }], property [${name}] is not observable.`
+      );
+    }
+  };
+  return new Proxy(scene, handler) as any;
+}
+
+export function actionProxy(f: () => void, ...args: any[]) {
+  return f(...args);
 }
