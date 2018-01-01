@@ -9,9 +9,10 @@ export type SceneDictItem = {
 
 export type SceneDict = Record<string, SceneDictItem>;
 
-export type Task = {
+export type TransItem = {
   id: string;
-  isDone: () => boolean;
+  isDone: boolean;
+  isCanceled: boolean;
 };
 
 export type Observer = {

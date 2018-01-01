@@ -3,4 +3,4 @@ enum PropertyType {
   ACTION
 }
 
-export default PropertyType
+export default PropertyType;

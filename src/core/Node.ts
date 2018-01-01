@@ -1,38 +1,46 @@
 import Scene from "./Scene";
 import SceneAPI from "../api/Scene";
+import TransManager from "./TransManager";
 
 export default class Node {
-  id: string;
-  name: string;
-  scenes: Record<string, Scene>;
-  children: Record<string, Node>;
-  parent: Node | null | undefined;
-  dirtySceneKeys: Record<string, Record<string, boolean>>;
-  dirtyScenes: Record<string, boolean>;
-  dirtyNodes: Record<string, boolean>;
-  commitCb: (
+  private id: string;
+  private name: string;
+  private scenes: Record<string, Scene>;
+  private children: Record<string, Node>;
+  private parent: Node | null | undefined;
+  private dirtySceneKeys: Record<string, Record<string, boolean>>;
+  private dirtyScenes: Record<string, boolean>;
+  private dirtyNodes: Record<string, boolean>;
+  private updateDirtyNode: (
     id: string,
     nodeDict: Record<string, Record<string, boolean>>
   ) => void;
+  private transManager: TransManager;
 
   constructor(
     id: string,
     name: string,
     parent: Node | null | undefined,
-    updateCb: (
+    updateDirtyNode: (
       id: string,
       nodeDict: Record<string, Record<string, boolean>>
-    ) => void
+    ) => void,
+    transManager: TransManager
   ) {
     this.id = id;
     this.name = name;
     this.parent = parent;
     this.children = {};
     this.scenes = {};
-    this.commitCb = updateCb;
+    this.updateDirtyNode = updateDirtyNode;
     this.dirtyScenes = {};
     this.dirtySceneKeys = {};
     this.dirtyNodes = {};
+    this.transManager = transManager;
+  }
+
+  getTransations() {
+    return this.transManager;
   }
 
   destroy() {
@@ -55,7 +63,7 @@ export default class Node {
     this.dirtyNodes = {};
     this.dirtyScenes = {};
     this.dirtySceneKeys = {};
-    this.commitCb(this.id, dirtyScenes);
+    this.updateDirtyNode(this.id, dirtyScenes);
   }
 
   addDirtyScenes(sceneName: string) {
@@ -98,6 +106,7 @@ export default class Node {
     }
     scene.destroy();
     delete this.scenes[sceneName];
+    return scene;
   }
 
   mountChild(id: string, node: Node) {
@@ -112,7 +121,8 @@ export default class Node {
   }
 
   unmountChild(id: string) {
-    if (this.children[id] != null) {
+    let child = this.children[id];
+    if (child != null) {
       throw new Error(
         `Error occurred while unmounting node [${this.id}], child [${{
           id
@@ -120,6 +130,7 @@ export default class Node {
       );
     }
     delete this.children[id];
+    return child;
   }
 
   getSceneEntity(sceneName: string) {

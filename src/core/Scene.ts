@@ -1,16 +1,19 @@
 import SceneAPI from "../api/Scene";
 import Node from "./Node";
 import { createSceneRegister, createSceneEntity, actionProxy } from "./utils";
+import TransManager from "./TransManager";
+import Transaction from "./Transaction";
 
 export default class Scene {
-  name: string;
-  state: any;
-  nextState: any;
-  isDestroyed: boolean;
-  actions: Record<string, () => void>;
-  node: Node;
-  entity: SceneAPI;
-  tasks: any[];
+  private name: string;
+  private state: any;
+  private nextState: any;
+  private isDestroyed: boolean;
+  private oActions: Record<string, () => void>;
+  private actions: Record<string, () => void>;
+  private node: Node;
+  private entity: SceneAPI;
+  private transDict: Record<string, Record<string, Transaction>>;
 
   constructor(sceneName: string, RawScene: typeof SceneAPI, node: Node) {
     this.name = sceneName;
@@ -23,18 +26,63 @@ export default class Scene {
       stateDict[key] = rawScene[key];
     });
     this.state = stateDict;
-    Object.keys(stateDict).forEach(key => {
-      actionsDict[key] = rawScene[key];
+    let transation = node.getTransations();
+    let transDict: Record<string, Record<string, Transaction>> = {};
+    let oActions = {};
+    Object.keys(actionsDict).forEach(key => {
+      transDict[key] = {};
+      this.oActions[key] = actionsDict;
+      actionsDict[key] = actionProxy.bind(
+        null,
+        key,
+        rawScene[key],
+        this.addTrans,
+        transation
+      );
     });
+    this.transDict = transDict;
+    this.oActions = oActions;
     this.actions = actionsDict;
     this.nextState = Object.assign({}, stateDict);
     this.isDestroyed = false;
     this.node = node;
     this.entity = createSceneEntity(this, stateDict, actionsDict);
-    this.tasks = [];
   }
 
-  addTask() {}
+  addTrans(actionName: string, t: Transaction) {
+    let actionTrans = this.transDict[actionName];
+    if (actionTrans == null) {
+      throw new Error(
+        `Error occurred while adding transaction to scene [${
+          this.name
+        }], action name [${{
+          actionName
+        }}] does not exist.`
+      );
+    }
+    actionTrans[t.getId()] = t;
+    return t;
+  }
+
+  deleteTrans(actionName: string, tid: string) {
+    let actionTrans = this.transDict[actionName];
+    if (actionTrans == null) {
+      throw new Error(
+        `Error occurred while adding transaction to scene [${
+          this.name
+        }], action name [${{
+          actionName
+        }}] does not exist.`
+      );
+    }
+    let t = actionTrans[tid];
+    delete actionTrans[tid];
+    return t;
+  }
+
+  getName() {
+    return this.name;
+  }
 
   destroy() {
     this.isDestroyed = true;
@@ -59,6 +107,14 @@ export default class Scene {
       this.node.addDirtyScenes(this.name);
       Object.assign(this.nextState, pState);
     }
+  }
+
+  getOActions() {
+    return this.oActions;
+  }
+
+  getState() {
+    return this.nextState;
   }
 
   getEntity() {

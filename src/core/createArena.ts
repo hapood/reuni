@@ -1,19 +1,28 @@
 import Node from "./Node";
 import { SceneDict, SceneDictItem, Observer } from "./types";
-import { buildStateTreeDict, genId } from "./utils";
+import { genId } from "./utils";
+import Scene from "./Scene";
 import SceneAPI from "../api/Scene";
+import TransManager from "./TransManager";
 
 export class ArenaStore {
-  nodeDict: SceneDict;
-  rootId: string;
-  observers: Observer[];
-  dirtyNodes: Record<string, Record<string, Record<string, boolean>>>;
+  private nodeDict: SceneDict;
+  private rootId: string;
+  private observers: Observer[];
+  private dirtyNodes: Record<string, Record<string, Record<string, boolean>>>;
+  private transManager: TransManager;
 
   constructor() {
     let nodeId = genId();
     this.rootId = nodeId;
     let rootName = "$root";
-    let rootNode = new Node(nodeId, rootName, null, this.updateDirtyNode);
+    let rootNode = new Node(
+      nodeId,
+      rootName,
+      null,
+      this.updateDirtyNode,
+      this.transManager
+    );
     this.nodeDict = {
       [nodeId]: {
         path: [nodeId],
@@ -22,6 +31,7 @@ export class ArenaStore {
         name: rootName
       }
     };
+    this.transManager = new TransManager();
   }
 
   updateDirtyNode(
@@ -32,7 +42,7 @@ export class ArenaStore {
   }
 
   mountNode(nodeId: string, nodeName: string, parentId?: string) {
-    let newNodeId: string | undefined = nodeId;
+    let newNodeId: string | undefined | null = nodeId;
     if (newNodeId != null) {
       if (this.nodeDict[newNodeId] != null) {
         throw new Error(
@@ -43,7 +53,7 @@ export class ArenaStore {
       while (newNodeId == null) {
         newNodeId = genId();
         if (this.nodeDict[newNodeId] != null) {
-          newNodeId = undefined;
+          newNodeId = null;
         }
       }
     }
@@ -68,7 +78,8 @@ export class ArenaStore {
       newNodeId,
       nodeName,
       pNode.ref,
-      this.updateDirtyNode
+      this.updateDirtyNode,
+      this.transManager
     );
     nodePath = pNode.path.concat(nodeId);
     this.nodeDict[nodeId] = {
@@ -117,7 +128,7 @@ export class ArenaStore {
         `Error occurred while adding scene, node [${nodeId}] does not exist.`
       );
     }
-    node.ref.deleteScene(sceneName);
+    let scene = node.ref.deleteScene(sceneName);
     this.observers.forEach(observer => {
       let careNodeIdList = Object.keys(observer.care);
       for (let i = 0; i < careNodeIdList.length; i++) {
@@ -134,6 +145,7 @@ export class ArenaStore {
         }
       }
     });
+    return scene;
   }
 
   unmoutNode(nodeId: string) {
@@ -155,6 +167,7 @@ export class ArenaStore {
         }
       }
     });
+    return node.ref;
   }
 
   subscribe(
