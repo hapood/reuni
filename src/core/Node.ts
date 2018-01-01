@@ -39,7 +39,7 @@ export default class Node {
     this.transManager = transManager;
   }
 
-  getTransations() {
+  getTransManager() {
     return this.transManager;
   }
 

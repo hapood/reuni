@@ -26,7 +26,7 @@ export default class Scene {
       stateDict[key] = rawScene[key];
     });
     this.state = stateDict;
-    let transation = node.getTransations();
+    let transation = node.getTransManager();
     let transDict: Record<string, Record<string, Transaction>> = {};
     let oActions = {};
     Object.keys(actionsDict).forEach(key => {

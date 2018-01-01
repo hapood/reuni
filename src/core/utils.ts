@@ -6,7 +6,7 @@ import { ScenePropertyRegister } from "../api/types";
 import Scene from "./Scene";
 import TransManager from "./TransManager";
 import Transaction from "./Transaction";
-import { tidKey } from "../api/Transaction";
+import { tidKey, tmKey } from "../api/Transaction";
 
 export function genId() {
   return (
@@ -72,7 +72,7 @@ export function createSceneEntity(
 
 function buildTransactionEntity(
   scene: Scene,
-  transations: TransManager,
+  transManager: TransManager,
   t: Transaction
 ) {
   let handler = {
@@ -83,10 +83,13 @@ function buildTransactionEntity(
       }
       let actions = scene.getOActions();
       if (actions[name] != null) {
-        return tActionProxy.bind(null, actions[name], scene, transations, t);
+        return tActionProxy.bind(null, actions[name], scene, transManager, t);
       }
       if (name === tidKey) {
         return t;
+      }
+      if (name === tmKey) {
+        return transManager;
       }
       throw new Error(
         `Error occurred while reading scene [${scene.getName()}] in transition [${t.getId()}], unknown property [${name}].`
@@ -110,11 +113,11 @@ function buildTransactionEntity(
 function tActionProxy(
   f: () => void,
   scene: Scene,
-  transations: TransManager,
+  transManager: TransManager,
   t: Transaction,
   ...args: any[]
 ) {
-  let entity = buildTransactionEntity(scene, transations, t);
+  let entity = buildTransactionEntity(scene, transManager, t);
   return tidGetterProxy(f.apply(entity, args), t);
 }
 
@@ -134,17 +137,17 @@ export function actionProxy(
   actionName: string,
   f: () => void,
   scene: Scene,
-  transations: TransManager,
+  transManager: TransManager,
   ...args: any[]
 ) {
-  let t = transations.startTrans();
+  let t = transManager.startTrans();
   scene.addTrans(actionName, t);
-  let entity = buildTransactionEntity(scene, transations, t);
+  let entity = buildTransactionEntity(scene, transManager, t);
   let r = f.apply(entity, args);
   let tid = t.getId();
   if (typeof r.then === "function") {
     r.then(() => {
-      transations.doneTrans(tid);
+      transManager.doneTrans(tid);
       scene.deleteTrans(actionName, tid);
     });
     return tidGetterProxy(r, t);
