@@ -1,6 +1,7 @@
 import Scene from "./Scene";
 import Node from "./Node";
 import TransactionStatus from "../api/TransactionStatus";
+import PropertyType from "../api/PropertyType";
 
 export type SceneDictItem = {
   path: string[];
@@ -10,6 +11,13 @@ export type SceneDictItem = {
 };
 
 export type SceneDict = Record<string, SceneDictItem>;
+
+export type ActionDictItem = {
+  type: PropertyType;
+  action: () => void;
+};
+
+export type ActionDict = Record<string, ActionDictItem>;
 
 export type TransItem = {
   id: string;

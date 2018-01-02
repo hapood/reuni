@@ -1,18 +1,25 @@
-import Scene from "./Scene";
 import PropertyType from "./PropertyType";
+import { cacheDictKey } from "./decorator";
 
 export type ActionDecorator = {
   (target: Object, propertyKey: string): void;
   async: (target: Object, propertyKey: string) => void;
 };
-const action = function(target: Object, propertyKey: string) {
-  let scene: Scene = Object.getPrototypeOf(Object.getPrototypeOf(target));
-  scene.register(PropertyType.ACTION, propertyKey);
+
+const action = function(target: any, propertyKey: string) {
+  let cache = target[cacheDictKey];
+  if (cache == null) {
+    target[cacheDictKey] = cache = {};
+  }
+  cache[propertyKey] = { type: PropertyType.ACTION, value: propertyKey };
 } as ActionDecorator;
 
-action.async = function(target: Object, propertyKey: string) {
-  let scene: Scene = Object.getPrototypeOf(Object.getPrototypeOf(target));
-  scene.register(PropertyType.ASYNC_ACTION, propertyKey);
+action.async = function(target: any, propertyKey: string) {
+  let cache = target[cacheDictKey];
+  if (cache == null) {
+    target[cacheDictKey] = cache = {};
+  }
+  cache[propertyKey] = { type: PropertyType.ASYNC_ACTION, value: propertyKey };
 };
 
 export default action;

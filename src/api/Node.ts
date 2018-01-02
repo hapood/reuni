@@ -1,5 +1,4 @@
 import Scene from "../core/Scene";
-import SceneAPI from "./Scene";
 import TransManager from "../core/TransManager";
 import NodeItem from "../core/Node";
 import ArenaStore from "../core/ArenaStore";
@@ -33,13 +32,15 @@ export default class Node {
     return this._nodeItem.isDestroyed();
   }
 
-  addScene<S extends Record<string, {}>, A>(
-    sceneName: string,
-    RawScene: typeof SceneAPI
-  ) {
+  addScene(sceneName: string, RawScene: new () => any) {
     let nodeItem = this._nodeItem;
     if (nodeItem.isDestroyed() !== true) {
-      return this._arenaStore.addScene(nodeItem.getId(), sceneName, RawScene);
+      let scene = this._arenaStore.addScene(
+        nodeItem.getId(),
+        sceneName,
+        RawScene
+      );
+      return scene.getName();
     }
     return null;
   }

@@ -1,7 +1,6 @@
 import { SceneDict, SceneDictItem, Observer } from "./types";
 import { genId } from "./utils";
 import Scene from "./Scene";
-import SceneAPI from "../api/Scene";
 import NodeAPI from "../api/Node";
 import TransManager from "./TransManager";
 import Node from "./Node";
@@ -97,14 +96,14 @@ export default class ArenaStore {
     return new NodeAPI(newNode, this);
   }
 
-  addScene(nodeId: string, sceneName: string, RawScene: typeof SceneAPI) {
+  addScene(nodeId: string, sceneName: string, RawScene: new () => any) {
     let node = this._nodeDict[nodeId];
     if (node == null) {
       throw new Error(
         `Error occurred while adding scene, node [${nodeId}] does not exist.`
       );
     }
-    node.ref.addScene(sceneName, RawScene);
+    let scene = node.ref.addScene(sceneName, RawScene);
     this._observers.forEach(observer => {
       let careNodeIdList = Object.keys(observer.care);
       for (let i = 0; i < careNodeIdList.length; i++) {
@@ -121,6 +120,7 @@ export default class ArenaStore {
         }
       }
     });
+    return scene;
   }
 
   deleteScene(nodeId: string, sceneName: string) {
@@ -259,7 +259,7 @@ export default class ArenaStore {
     });
   }
 
-  getScene(anchorId: string, nodeName: string, sceneName: string) {
+  getSceneEntity(anchorId: string, nodeName: string, sceneName: string) {
     let anchorNode = this._nodeDict[anchorId];
     if (anchorNode == null) {
       throw new Error(
@@ -284,6 +284,10 @@ export default class ArenaStore {
       }
     }
     return node.ref.getSceneEntity(sceneName);
+  }
+
+  getNode(nodeId: string) {
+    return this._nodeDict[nodeId].ref;
   }
 }
 

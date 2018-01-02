@@ -27,5 +27,9 @@ it("ArenaSotre mount/unmount node", () => {
 it("ArenaSotre add/delete Scene", () => {
   let arenaSotre = createArena();
   let node1 = arenaSotre.mountNode(null, "node1");
-  node1.addScene("scene1", MockScene);
+  let sceneName1 = node1.addScene("scene1", MockScene) as string;
+  expect(sceneName1).toBe("scene1");
+  node1.deleteScene(sceneName1);
+  let keys = Object.keys(arenaSotre.getNode(sceneName1).getScenes());
+  expect(keys.length).toBe(0);
 });

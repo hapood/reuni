@@ -1,49 +1,77 @@
-import SceneAPI from "../api/Scene";
 import Node from "./Node";
-import { createSceneRegister, createSceneEntity, actionProxy } from "./utils";
+import { createSceneEntity, actionProxy, asyncActionProxy } from "./utils";
 import TransManager from "./TransManager";
 import Transaction from "./Transaction";
+import { ActionDict } from "./types";
+import PropertyType from "../api/PropertyType";
+import { cacheDictKey } from "../api/decorator";
 
 export default class Scene {
   private _name: string;
   private _state: any;
   private _nextState: any;
   private _isDestroyed: boolean;
-  private _oActions: Record<string, () => void>;
+  private _actionDict: ActionDict;
   private _actions: Record<string, () => void>;
   private _node: Node;
-  private _entity: SceneAPI;
+  private _entity: new () => any;
   private _transDict: Record<string, Record<string, Transaction>>;
 
-  constructor(sceneName: string, RawScene: typeof SceneAPI, node: Node) {
+  constructor(sceneName: string, RawScene: new () => any, node: Node) {
     this._name = sceneName;
-    let actionsDict: any = {};
+    let actionsDict: ActionDict = {};
     let stateDict: any = {};
-    let rawScene: any = new RawScene(
-      createSceneRegister(stateDict, actionsDict)
-    );
-    Object.keys(stateDict).forEach(key => {
-      stateDict[key] = rawScene[key];
-    });
-    this._state = stateDict;
+    let rawScene: any = new RawScene();
+    let propertyDict = rawScene[cacheDictKey];
     let transation = node.getTransManager();
     let transDict: Record<string, Record<string, Transaction>> = {};
-    let oActions = {};
-    Object.keys(actionsDict).forEach(key => {
-      transDict[key] = {};
-      this._oActions[key] = actionsDict;
-      actionsDict[key] = actionProxy.bind(
-        null,
-        key,
-        rawScene[key],
-        this.addTrans,
-        transation
-      );
-    });
-    this._transDict = transDict;
-    this._oActions = oActions;
-    this._actions = actionsDict;
+    let bindedActions: Record<string, () => void> = {};
+    let oAction;
+    Object.entries(propertyDict).forEach(
+      ([key, type]: [string, PropertyType]) => {
+        switch (type) {
+          case PropertyType.OBSERVABLE:
+            transDict[key] = {};
+            stateDict[key] = rawScene[key];
+            break;
+          case PropertyType.ACTION:
+            oAction = rawScene[key];
+            transDict[key] = {};
+            actionsDict[key] = {
+              type: PropertyType.ACTION,
+              action: oAction
+            };
+            bindedActions[key] = actionProxy.bind(
+              null,
+              key,
+              oAction,
+              this.addTrans,
+              transation
+            );
+            break;
+          case PropertyType.ASYNC_ACTION:
+            oAction = rawScene[key];
+            transDict[key] = {};
+            actionsDict[key] = {
+              type: PropertyType.ASYNC_ACTION,
+              action: oAction
+            };
+            bindedActions[key] = actionProxy.bind(
+              null,
+              key,
+              oAction,
+              this.addTrans,
+              transation
+            );
+            break;
+        }
+      }
+    );
+    this._state = stateDict;
     this._nextState = Object.assign({}, stateDict);
+    this._transDict = transDict;
+    this._actionDict = actionsDict;
+    this._actions = bindedActions;
     this._isDestroyed = false;
     this._node = node;
     this._entity = createSceneEntity(this, stateDict, actionsDict);
@@ -109,8 +137,8 @@ export default class Scene {
     }
   }
 
-  getOActions() {
-    return this._oActions;
+  getActionDict() {
+    return this._actionDict;
   }
 
   getState() {

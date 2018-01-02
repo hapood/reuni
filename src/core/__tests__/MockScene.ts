@@ -1,6 +1,6 @@
-import { SceneAPI, observable, action } from "src";
+import { observable, action } from "src";
 
-export default class MockScene extends SceneAPI {
+export default class MockScene {
   @observable name = "test";
   @observable cnt = 0;
 

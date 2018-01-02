@@ -1,7 +1,12 @@
-import Scene from "./Scene";
 import PropertyType from "./PropertyType";
+import { cacheDictKey } from "./decorator";
 
-export default function observable(target: Object, propertyKey: string) {
-  let scene: Scene = Object.getPrototypeOf(Object.getPrototypeOf(target));
-  scene.register(PropertyType.OBSERVABLE, propertyKey);
+function observable(target: any, propertyKey: string) {
+  let cache = target[cacheDictKey];
+  if (cache == null) {
+    target[cacheDictKey] = cache = {};
+  }
+  cache[propertyKey] = { type: PropertyType.OBSERVABLE, value: propertyKey };
 }
+
+export default observable as any;

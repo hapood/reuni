@@ -1,5 +1,4 @@
 import Scene from "./Scene";
-import SceneAPI from "../api/Scene";
 import TransManager from "../core/TransManager";
 import ArenaStore from "./ArenaStore";
 
@@ -94,7 +93,7 @@ export default class Node {
 
   addScene<S extends Record<string, {}>, A>(
     sceneName: string,
-    RawScene: typeof SceneAPI
+    RawScene: new () => any
   ) {
     if (this._scenes[sceneName] != null && this._isDestroyed !== true) {
       throw new Error(
@@ -103,7 +102,9 @@ export default class Node {
         }], scene [${sceneName}] already exist.`
       );
     }
-    this._scenes[sceneName] = new Scene(sceneName, RawScene, this);
+    let scene = new Scene(sceneName, RawScene, this);
+    this._scenes[sceneName] = scene;
+    return scene;
   }
 
   deleteScene(sceneName: string) {
@@ -165,6 +166,10 @@ export default class Node {
     return null;
   }
 
+  getScenes() {
+    return this._scenes;
+  }
+  
   getSceneEntity(sceneName: string) {
     if (this._isDestroyed !== true) {
       let scene = this._scenes[sceneName];

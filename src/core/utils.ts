@@ -1,5 +1,4 @@
-import { SceneDict, TransItem } from "./types";
-import SceneAPI from "../api/Scene";
+import { SceneDict, TransItem, ActionDict, ActionDictItem } from "./types";
 import PropertyType from "../api/PropertyType";
 import { ScenePropertyRegister } from "../api/types";
 import Scene from "./Scene";
@@ -17,33 +16,7 @@ export function genId() {
   );
 }
 
-export function createSceneRegister(
-  stateDict: any,
-  actionsDict: any
-): ScenePropertyRegister {
-  return function(type: PropertyType, key: string) {
-    switch (type) {
-      case PropertyType.OBSERVABLE:
-        stateDict[key] = true;
-        break;
-      case PropertyType.ACTION:
-        stateDict[key] = true;
-        break;
-      default:
-        throw new Error(
-          `Error occurred while parsing scene [${
-            this.id
-          }], unknown property type [${type}].`
-        );
-    }
-  };
-}
-
-export function createSceneEntity(
-  scene: Scene,
-  state: any,
-  actions: any
-): SceneAPI {
+export function createSceneEntity(scene: Scene, state: any, actions: any): any {
   let handler = {
     get: function(target: Scene, name: string) {
       if (state[name] != null) {
@@ -81,7 +54,7 @@ function buildTransactionEntity(
       if (state[name] != null) {
         return state[name];
       }
-      let actions = scene.getOActions();
+      let actions = scene.getActionDict();
       if (actions[name] != null) {
         return tActionProxy.bind(null, actions[name], scene, transManager, t);
       }
@@ -150,15 +123,29 @@ export function actionProxy(
   });
   let entity = buildTransactionEntity(scene, transManager, t);
   let r = f.apply(entity, args);
-  if (typeof r.then === "function") {
-    r.then(() => {
-      transManager.doneTrans(tid);
+  return tidGetterProxy(r, t);
+}
+
+export function asyncActionProxy(
+  actionName: string,
+  f: () => void,
+  scene: Scene,
+  transManager: TransManager,
+  ...args: any[]
+) {
+  let t = transManager.startTrans();
+  scene.addTrans(actionName, t);
+  let tid = t.getId();
+  t.subscribe((tStatus: TransactionStatus) => {
+    if (tStatus === TransactionStatus.CANCELED) {
       scene.deleteTrans(actionName, tid);
-    });
-    return tidGetterProxy(r, t);
-  } else {
-    throw new Error(
-      `Error occurred while creating action [${actionName}] in scene [${scene.getName()}], action [${actionName}] is not async action.`
-    );
-  }
+    }
+  });
+  let entity = buildTransactionEntity(scene, transManager, t);
+  let r = f.apply(entity, args);
+  r.then(() => {
+    transManager.doneTrans(tid);
+    scene.deleteTrans(actionName, tid);
+  });
+  return tidGetterProxy(r, t);
 }
