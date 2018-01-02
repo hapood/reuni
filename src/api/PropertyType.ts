@@ -1,6 +1,7 @@
 enum PropertyType {
   OBSERVABLE,
-  ACTION
+  ACTION,
+  ASYNC_ACTION
 }
 
 export default PropertyType;

@@ -1,50 +1,58 @@
-import Node from "./Node";
 import { SceneDict, SceneDictItem, Observer } from "./types";
 import { genId } from "./utils";
 import Scene from "./Scene";
 import SceneAPI from "../api/Scene";
+import NodeAPI from "../api/Node";
 import TransManager from "./TransManager";
+import Node from "./Node";
 
-export class ArenaStore {
-  private nodeDict: SceneDict;
-  private rootId: string;
-  private observers: Observer[];
-  private dirtyNodes: Record<string, Record<string, Record<string, boolean>>>;
-  private transManager: TransManager;
+export default class ArenaStore {
+  private _nodeDict: SceneDict;
+  private _rootId: string;
+  private _observers: Observer[];
+  private _dirtyNodes: Record<string, Record<string, Record<string, boolean>>>;
+  private _transManager: TransManager;
 
   constructor() {
     let nodeId = genId();
-    this.rootId = nodeId;
+    this._rootId = nodeId;
     let rootName = "$root";
-    let rootNode = new Node(
-      nodeId,
-      rootName,
-      null,
-      this.updateDirtyNode,
-      this.transManager
-    );
-    this.nodeDict = {
+    let rootNodeItem = new Node(nodeId, rootName, this);
+    this._nodeDict = {
       [nodeId]: {
         path: [nodeId],
-        ref: rootNode,
+        ref: rootNodeItem,
         nameDict: { $: nodeId },
         name: rootName
       }
     };
-    this.transManager = new TransManager();
+    this._transManager = new TransManager();
+    this._observers = [];
+  }
+
+  getTransManager() {
+    return this._transManager;
+  }
+
+  getNodeDict() {
+    return this._nodeDict;
   }
 
   updateDirtyNode(
     nodeId: string,
     dirtyScenes: Record<string, Record<string, boolean>>
   ) {
-    this.dirtyNodes[nodeId] = dirtyScenes;
+    this._dirtyNodes[nodeId] = dirtyScenes;
   }
 
-  mountNode(nodeId: string, nodeName: string, parentId?: string) {
-    let newNodeId: string | undefined | null = nodeId;
+  mountNode(
+    nodeId: string | undefined | null,
+    nodeName: string,
+    parentId?: string
+  ) {
+    let newNodeId = nodeId;
     if (newNodeId != null) {
-      if (this.nodeDict[newNodeId] != null) {
+      if (this._nodeDict[newNodeId] != null) {
         throw new Error(
           `Error occurred while mounting node, id [${newNodeId}] already exist.`
         );
@@ -52,7 +60,7 @@ export class ArenaStore {
     } else {
       while (newNodeId == null) {
         newNodeId = genId();
-        if (this.nodeDict[newNodeId] != null) {
+        if (this._nodeDict[newNodeId] != null) {
           newNodeId = null;
         }
       }
@@ -60,9 +68,9 @@ export class ArenaStore {
     let nodePath: string[];
     let pNode: SceneDictItem;
     if (parentId == null) {
-      pNode = this.nodeDict[this.rootId];
+      pNode = this._nodeDict[this._rootId];
     } else {
-      pNode = this.nodeDict[parentId];
+      pNode = this._nodeDict[parentId];
     }
     if (pNode == null) {
       throw new Error(
@@ -74,15 +82,9 @@ export class ArenaStore {
         'Error occurred while mounting node, name of node can not start with "$".'
       );
     }
-    let newNode = new Node(
-      newNodeId,
-      nodeName,
-      pNode.ref,
-      this.updateDirtyNode,
-      this.transManager
-    );
-    nodePath = pNode.path.concat(nodeId);
-    this.nodeDict[nodeId] = {
+    let newNode = new Node(newNodeId, nodeName, this, pNode.ref);
+    nodePath = pNode.path.concat(newNodeId);
+    this._nodeDict[newNodeId] = {
       path: nodePath,
       ref: newNode,
       name: nodeName,
@@ -91,19 +93,19 @@ export class ArenaStore {
         $: nodeId
       })
     };
-    pNode.ref.mountChild(nodeId, newNode);
-    return newNodeId;
+    pNode.ref.mountChild(newNodeId, newNode);
+    return new NodeAPI(newNode, this);
   }
 
   addScene(nodeId: string, sceneName: string, RawScene: typeof SceneAPI) {
-    let node = this.nodeDict[nodeId];
+    let node = this._nodeDict[nodeId];
     if (node == null) {
       throw new Error(
         `Error occurred while adding scene, node [${nodeId}] does not exist.`
       );
     }
     node.ref.addScene(sceneName, RawScene);
-    this.observers.forEach(observer => {
+    this._observers.forEach(observer => {
       let careNodeIdList = Object.keys(observer.care);
       for (let i = 0; i < careNodeIdList.length; i++) {
         let careNodeId = careNodeIdList[i];
@@ -122,14 +124,14 @@ export class ArenaStore {
   }
 
   deleteScene(nodeId: string, sceneName: string) {
-    let node = this.nodeDict[nodeId];
+    let node = this._nodeDict[nodeId];
     if (node == null) {
       throw new Error(
         `Error occurred while adding scene, node [${nodeId}] does not exist.`
       );
     }
     let scene = node.ref.deleteScene(sceneName);
-    this.observers.forEach(observer => {
+    this._observers.forEach(observer => {
       let careNodeIdList = Object.keys(observer.care);
       for (let i = 0; i < careNodeIdList.length; i++) {
         let careNodeId = careNodeIdList[i];
@@ -149,15 +151,24 @@ export class ArenaStore {
   }
 
   unmoutNode(nodeId: string) {
-    let node = this.nodeDict[nodeId];
+    let node = this._nodeDict[nodeId];
     if (node == null) {
       throw new Error(
         `Error occurred while unmounting node, node [${nodeId}] does not exist.`
       );
     }
-    node.ref.unmountChild(nodeId);
-    delete this.nodeDict[nodeId];
-    this.observers.forEach(observer => {
+    let nodeKeys = node.ref.destroy();
+    let parent = node.ref.getParent();
+    if (parent != null) {
+      parent.unmountChild(nodeId);
+    }
+    if (nodeKeys != null) {
+      nodeKeys.forEach(key => {
+        delete this._nodeDict[key];
+      });
+    }
+    delete this._nodeDict[nodeId];
+    this._observers.forEach(observer => {
       let careNodeIdList = Object.keys(observer.care);
       for (let i = 0; i < careNodeIdList.length; i++) {
         let careNodeId = careNodeIdList[i];
@@ -175,7 +186,7 @@ export class ArenaStore {
     care: Record<string, Record<string, string[]>>,
     cb: (isValid: boolean) => void
   ) {
-    let anchorNode = this.nodeDict[anchorId];
+    let anchorNode = this._nodeDict[anchorId];
     if (anchorNode == null) {
       throw new Error(
         `Error occurred while adding observer, anchor node [${anchorId}] does not exist.`
@@ -193,7 +204,7 @@ export class ArenaStore {
             `Error occurred while adding observer to node [${anchorId}], parent node with name [${nodeName}] does not exist.`
           );
         }
-        node = this.nodeDict[nodeId];
+        node = this._nodeDict[nodeId];
         if (node == null) {
           throw new Error(
             `Error occurred while adding observer to node, node [${nodeId}] does not exist.`
@@ -203,31 +214,31 @@ export class ArenaStore {
       }
     });
     let curObserver = { care: newCare, cb };
-    this.observers.push(curObserver);
+    this._observers.push(curObserver);
     return curObserver;
   }
 
   unsubscribe(observers: Observer[]) {
-    this.observers = this.observers.filter(
+    this._observers = this._observers.filter(
       observer => !observers.includes(observer)
     );
   }
 
   commit() {
-    let rootNode = this.nodeDict[this.rootId];
+    let rootNode = this._nodeDict[this._rootId];
     if (rootNode == null) {
       throw new Error(
         `Error occurred while committing, root node [${
-          this.rootId
+          this._rootId
         }] does not exist.`
       );
     }
     rootNode.ref.commit();
-    this.observers.forEach(observer => {
+    this._observers.forEach(observer => {
       let careNodeIdList = Object.keys(observer.care);
       for (let i = 0; i < careNodeIdList.length; i++) {
         let nodeId = careNodeIdList[i];
-        let dirtyScenes = this.dirtyNodes[nodeId];
+        let dirtyScenes = this._dirtyNodes[nodeId];
         if (dirtyScenes != null) {
           let careSceneNameList = Object.keys(observer.care[nodeId]);
           for (let j = 0; j < careSceneNameList.length; j++) {
@@ -249,7 +260,7 @@ export class ArenaStore {
   }
 
   getScene(anchorId: string, nodeName: string, sceneName: string) {
-    let anchorNode = this.nodeDict[anchorId];
+    let anchorNode = this._nodeDict[anchorId];
     if (anchorNode == null) {
       throw new Error(
         `Error occurred while getting scene, anchor node [${anchorId}] does not exist.`
@@ -265,7 +276,7 @@ export class ArenaStore {
           `Error occurred while getting scene, parent node with name [${nodeName}] does not exist.`
         );
       }
-      node = this.nodeDict[nodeId];
+      node = this._nodeDict[nodeId];
       if (node == null) {
         throw new Error(
           `Error occurred while getting scene, node [${nodeId}] does not exist.`
@@ -276,6 +287,6 @@ export class ArenaStore {
   }
 }
 
-export default function createArena(stateTree?: Node) {
+export function createArena(stateTree?: Node) {
   return new ArenaStore();
 }

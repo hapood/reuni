@@ -1,4 +1,3 @@
-import Node from "./Node";
 import { SceneDict, TransItem } from "./types";
 import SceneAPI from "../api/Scene";
 import PropertyType from "../api/PropertyType";
@@ -7,6 +6,7 @@ import Scene from "./Scene";
 import TransManager from "./TransManager";
 import Transaction from "./Transaction";
 import { tidKey, tmKey } from "../api/Transaction";
+import TransactionStatus from "../api/TransactionStatus";
 
 export function genId() {
   return (
@@ -142,9 +142,14 @@ export function actionProxy(
 ) {
   let t = transManager.startTrans();
   scene.addTrans(actionName, t);
+  let tid = t.getId();
+  t.subscribe((tStatus: TransactionStatus) => {
+    if (tStatus === TransactionStatus.CANCELED) {
+      scene.deleteTrans(actionName, tid);
+    }
+  });
   let entity = buildTransactionEntity(scene, transManager, t);
   let r = f.apply(entity, args);
-  let tid = t.getId();
   if (typeof r.then === "function") {
     r.then(() => {
       transManager.doneTrans(tid);

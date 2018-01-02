@@ -1,6 +1,7 @@
 import { TransItem } from "./types";
 import { genId } from "./utils";
 import Transaction from "./Transaction";
+import TransactionStatus from "../api/TransactionStatus";
 
 export default class TransManager {
   transDict: Record<string, TransItem>;
@@ -17,7 +18,12 @@ export default class TransManager {
         tranId = null;
       }
     }
-    let transItem: TransItem = { id: tranId, isDone: false, isCanceled: false };
+    let transItem: TransItem = {
+      id: tranId,
+      isDone: false,
+      isCanceled: false,
+      observers: []
+    };
     this.transDict[tranId] = transItem;
     return new Transaction(transItem, this);
   }
@@ -27,6 +33,9 @@ export default class TransManager {
     if (transItem != null) {
       transItem.isCanceled = true;
       delete this.transDict[transId];
+      transItem.observers.forEach(observer =>
+        observer(TransactionStatus.CANCELED)
+      );
     }
     return transItem;
   }
@@ -36,6 +45,7 @@ export default class TransManager {
     if (transItem != null) {
       transItem.isDone = true;
       delete this.transDict[transId];
+      transItem.observers.forEach(observer => observer(TransactionStatus.DONE));
     }
     return transItem;
   }

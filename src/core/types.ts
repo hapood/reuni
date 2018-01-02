@@ -1,4 +1,6 @@
+import Scene from "./Scene";
 import Node from "./Node";
+import TransactionStatus from "../api/TransactionStatus";
 
 export type SceneDictItem = {
   path: string[];
@@ -13,6 +15,16 @@ export type TransItem = {
   id: string;
   isDone: boolean;
   isCanceled: boolean;
+  observers: ((status: TransactionStatus) => void)[];
+};
+
+export type NodeItem = {
+  id: string;
+  name: string;
+  scenes: Record<string, Scene>;
+  parent: NodeItem | null | undefined;
+  children: Record<string, NodeItem>;
+  isDestroyed: boolean;
 };
 
 export type Observer = {

@@ -1,10 +1,10 @@
 import TransManager from "./TransManager";
 import { TransItem } from "./types";
+import TransactionStatus from "../api/TransactionStatus";
 
 export default class Transaction {
   private transItem: TransItem;
   private transManager: TransManager;
-  private cbs: (() => void)[];
 
   constructor(transItem: TransItem, transManager: TransManager) {
     this.transItem = transItem;
@@ -24,8 +24,16 @@ export default class Transaction {
   }
 
   cancel() {
-    if (this.transItem.isCanceled === false) {
-      this.transItem.isCanceled = true;
+    if (this.transItem.isCanceled !== true) {
+      this.transManager.cancelTans(this.transItem.id);
     }
+  }
+
+  subscribe(cb: (tStatus: TransactionStatus) => void) {
+    let observers = this.transItem.observers;
+    observers.push(cb);
+    return () => {
+      this.transItem.observers = observers.filter(observer => observer !== cb);
+    };
   }
 }

@@ -3,7 +3,8 @@
   "version": "0.0.1-alpha",
   "description": "Dynamic state container for JavaScript apps",
   "scripts": {
-    "prettier": "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\""
+    "prettier":
+      "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\""
   },
   "repository": {
     "type": "git",
@@ -19,10 +20,22 @@
   "peerDependencies": {
     "react": ">=16"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@types/jest": "^22.0.0",
+    "jest": "^22.0.4",
     "prettier": "^1.9.2",
+    "ts-jest": "^22.0.0",
     "typescript": "^2.6.2"
+  },
+  "jest": {
+    "moduleFileExtensions": ["ts", "tsx", "js"],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "testMatch": ["**/__tests__/*.(ts|js)"],
+    "moduleNameMapper": {
+      "^src$": "<rootDir>/src/index.ts"
+    }
   }
 }
