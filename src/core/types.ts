@@ -3,14 +3,14 @@ import Node from "./Node";
 import TransactionStatus from "../api/TransactionStatus";
 import PropertyType from "../api/PropertyType";
 
-export type SceneDictItem = {
+export type NodeDictItem = {
   path: string[];
   ref: Node;
   nameDict: Record<string, string>;
   name: string;
 };
 
-export type SceneDict = Record<string, SceneDictItem>;
+export type NodeDict = Record<string, NodeDictItem>;
 
 export type ActionDictItem = {
   type: PropertyType;

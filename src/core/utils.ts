@@ -1,9 +1,9 @@
-import { SceneDict, TransItem, ActionDict, ActionDictItem } from "./types";
+import { NodeDict, TransItem, ActionDict, ActionDictItem } from "./types";
 import PropertyType from "../api/PropertyType";
 import Scene from "./Scene";
 import TransManager from "./TransManager";
-import Transaction from "./Transaction";
-import { tidKey, asKey } from "../api/Transaction";
+import Transaction from "../api/Transaction";
+import { tKey, asKey } from "../api/Transaction";
 import TransactionStatus from "../api/TransactionStatus";
 import ArenaStore from "src/core/ArenaStore";
 import Node from "./Node";
@@ -57,16 +57,21 @@ function buildTransactionEntity(
       }
       let actions = scene.getActionDict();
       if (actions[name] != null) {
-        arenaStore.commit();
-        return tActionProxy.bind(
-          null,
-          actions[name].action,
-          scene,
-          arenaStore,
-          t
-        );
+        if (t.isCanceled() !== true && t.isDone() !== true) {
+          if (actions[name].type === PropertyType.ASYNC_ACTION) {
+            arenaStore.commit();
+          }
+          return tActionProxy.bind(
+            null,
+            actions[name].action,
+            scene,
+            arenaStore,
+            t
+          );
+        }
+        return null;
       }
-      if (name === tidKey) {
+      if (name === tKey) {
         return t;
       }
       if (name === asKey) {
@@ -79,9 +84,11 @@ function buildTransactionEntity(
     set: function(target: Scene, name: string, value: any) {
       let state = scene.getState();
       if (state[name] != null) {
-        target.setValue(name, value);
-        console.log(t);
-        return true;
+        if (t.isCanceled() !== true && t.isDone() !== true) {
+          target.setValue(name, value);
+          return true;
+        }
+        return false;
       }
       throw new Error(
         `Error occurred while writting scene [${scene.getName()}] in transition [${t.getId()}], property [${name}] is not observable.`
@@ -107,10 +114,11 @@ export function actionProxy(
   actionName: string,
   f: () => void,
   scene: Scene,
-  transManager: TransManager,
   ...args: any[]
 ) {
   if (scene.isDestroy() !== true) {
+    let arenaStore = (scene.getNode() as Node).getArenaStore() as ArenaStore;
+    let transManager = arenaStore.getTransManager();
     let t = transManager.startTrans();
     scene.addTrans(actionName, t);
     let tid = t.getId();
@@ -119,9 +127,10 @@ export function actionProxy(
         scene.deleteTrans(actionName, tid);
       }
     });
-    let arenaStore = (scene.getNode() as Node).getArenaStore() as ArenaStore;
     let entity = buildTransactionEntity(scene, arenaStore, t);
     let r = f.apply(entity, args);
+    transManager.doneTrans(tid);
+    arenaStore.commit();
     return r;
   }
   return null;
@@ -142,6 +151,7 @@ export function asyncActionProxy(
     t.subscribe((tStatus: TransactionStatus) => {
       if (tStatus === TransactionStatus.CANCELED) {
         scene.deleteTrans(actionName, tid);
+        arenaStore.commit();
       }
     });
     let entity = buildTransactionEntity(scene, arenaStore, t);
@@ -149,7 +159,10 @@ export function asyncActionProxy(
     r.then(() => {
       transManager.doneTrans(tid);
       scene.deleteTrans(actionName, tid);
+      arenaStore.commit();
     });
+    r[tKey] = t;
     return r;
   }
+  return null;
 }

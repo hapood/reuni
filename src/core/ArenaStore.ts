@@ -1,4 +1,4 @@
-import { SceneDict, SceneDictItem, Observer } from "./types";
+import { NodeDict, NodeDictItem, Observer } from "./types";
 import { genId } from "./utils";
 import Scene from "./Scene";
 import NodeAPI from "../api/Node";
@@ -6,7 +6,7 @@ import TransManager from "./TransManager";
 import Node from "./Node";
 
 export default class ArenaStore {
-  private _nodeDict: SceneDict;
+  private _nodeDict: NodeDict;
   private _rootId: string;
   private _observers: Observer[];
   private _dirtyNodes: Record<string, Record<string, Record<string, boolean>>>;
@@ -27,6 +27,7 @@ export default class ArenaStore {
     };
     this._transManager = new TransManager();
     this._observers = [];
+    this._dirtyNodes = {};
   }
 
   getTransManager() {
@@ -65,7 +66,7 @@ export default class ArenaStore {
       }
     }
     let nodePath: string[];
-    let pNode: SceneDictItem;
+    let pNode: NodeDictItem;
     if (parentId == null) {
       pNode = this._nodeDict[this._rootId];
     } else {
@@ -187,31 +188,28 @@ export default class ArenaStore {
     cb: (isValid: boolean) => void
   ) {
     let anchorNode = this._nodeDict[anchorId];
-    if (anchorNode == null) {
-      throw new Error(
-        `Error occurred while adding observer, anchor node [${anchorId}] does not exist.`
-      );
-    }
     let node;
     let newCare: Record<string, Record<string, string[]>> = {};
     Object.keys(care).map(nodeName => {
+      let nodeId;
       if (nodeName == "$") {
         node = anchorNode;
+        nodeId = anchorId;
       } else {
-        let nodeId = anchorNode.nameDict[nodeName];
+        nodeId = anchorNode.nameDict[nodeName];
         if (nodeId == null) {
           throw new Error(
             `Error occurred while adding observer to node [${anchorId}], parent node with name [${nodeName}] does not exist.`
           );
         }
         node = this._nodeDict[nodeId];
-        if (node == null) {
-          throw new Error(
-            `Error occurred while adding observer to node, node [${nodeId}] does not exist.`
-          );
-        }
-        newCare[nodeId] = care[nodeName];
       }
+      if (node == null) {
+        throw new Error(
+          `Error occurred while adding observer to node, node [${nodeId}] does not exist.`
+        );
+      }
+      newCare[nodeId] = care[nodeName];
     });
     let curObserver = { care: newCare, cb };
     this._observers.push(curObserver);
@@ -245,7 +243,7 @@ export default class ArenaStore {
             let sceneName = careSceneNameList[j];
             let dirtyKeys = dirtyScenes[sceneName];
             if (dirtyKeys != null) {
-              let careKeyList = Object.keys(observer.care[nodeId][sceneName]);
+              let careKeyList = observer.care[nodeId][sceneName];
               for (let k = 0; k < careKeyList.length; k++) {
                 let key = careKeyList[k];
                 if (dirtyKeys[key] != null) {
@@ -257,6 +255,7 @@ export default class ArenaStore {
         }
       }
     });
+    this._dirtyNodes = {};
   }
 
   getSceneEntity(anchorId: string, nodeName: string, sceneName: string) {

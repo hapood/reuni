@@ -30,4 +30,14 @@ export default class MockScene {
     await this.addAsync(5);
     this.cnt *= 2;
   }
+
+  @action.async
+  async cancelable() {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        this.cnt += 1;
+        resolve();
+      }, 0);
+    });
+  }
 }

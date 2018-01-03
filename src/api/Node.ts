@@ -32,7 +32,10 @@ export default class Node {
     return this._nodeItem.isDestroyed();
   }
 
-  subscribe(care: Record<string, Record<string, string[]>>, cb: () => void) {
+  subscribe(
+    care: Record<string, Record<string, string[]>>,
+    cb: (isValid: boolean) => void
+  ) {
     if (this._nodeItem.isDestroyed() !== true) {
       return this._arenaStore.subscribe(this.getId() as string, care, cb);
     }
@@ -41,15 +44,12 @@ export default class Node {
 
   addScene(sceneName: string, RawScene: new () => any) {
     let nodeItem = this._nodeItem;
-    if (nodeItem.isDestroyed() !== true) {
-      let scene = this._arenaStore.addScene(
-        nodeItem.getId(),
-        sceneName,
-        RawScene
-      );
-      return scene.getName();
-    }
-    return null;
+    let scene = this._arenaStore.addScene(
+      nodeItem.getId(),
+      sceneName,
+      RawScene
+    );
+    return scene == null ? null : scene.getName();
   }
 
   deleteScene(sceneName: string) {

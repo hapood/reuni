@@ -1,7 +1,7 @@
 import Node from "./Node";
 import { buildSceneEntity, actionProxy, asyncActionProxy } from "./utils";
 import TransManager from "./TransManager";
-import Transaction from "./Transaction";
+import Transaction from "../api/Transaction";
 import { ActionDict } from "./types";
 import PropertyType from "../api/PropertyType";
 import { getCache, cache } from "../api/decorator";
@@ -42,13 +42,7 @@ export default class Scene {
               type: PropertyType.ACTION,
               action: oAction
             };
-            bindedActions[key] = actionProxy.bind(
-              null,
-              key,
-              oAction,
-              this,
-              transManager
-            );
+            bindedActions[key] = actionProxy.bind(null, key, oAction, this);
             break;
           case PropertyType.ASYNC_ACTION:
             oAction = rawScene[key];
@@ -61,8 +55,7 @@ export default class Scene {
               null,
               key,
               oAction,
-              this,
-              transManager
+              this
             );
             break;
         }

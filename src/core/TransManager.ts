@@ -1,6 +1,6 @@
 import { TransItem } from "./types";
 import { genId } from "./utils";
-import Transaction from "./Transaction";
+import Transaction from "../api/Transaction";
 import TransactionStatus from "../api/TransactionStatus";
 
 export default class TransManager {
