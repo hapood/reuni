@@ -4,8 +4,8 @@ export default class MockScene {
   @observable observable = "test";
 
   @task
-  action() {}
+  task() {}
 
   @task.async
-  async asyncAction(num: number) {}
+  async asyncTask(num: number) {}
 }

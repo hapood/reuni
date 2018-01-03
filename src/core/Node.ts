@@ -1,6 +1,7 @@
 import Scene from "./Scene";
 import TaskManager from "../core/TaskManager";
 import ArenaStore from "./ArenaStore";
+import {Observer} from './types'
 
 export default class Node {
   private _id: string;
@@ -13,6 +14,7 @@ export default class Node {
   private _dirtyNodes: Record<string, boolean>;
   private _isDestroyed: boolean;
   private _arenaStore: ArenaStore;
+  private _observers: Observer[];
 
   constructor(id: string, name: string, arenaStore: ArenaStore, parent?: Node) {
     this._id = id;
@@ -25,6 +27,7 @@ export default class Node {
     this._dirtySceneKeys = {};
     this._isDestroyed = false;
     this._arenaStore = arenaStore;
+    this._observers = [];
   }
 
   getId() {
@@ -39,9 +42,15 @@ export default class Node {
     return this._parent;
   }
 
+  hasScenes(sceneNames: string[]) {
+    let nullSceneName = sceneNames.findIndex(
+      sceneName => this._scenes[sceneName] == null
+    );
+    return nullSceneName == null ? true : false;
+  }
+
   destroy(): null | string[] {
     if (this._isDestroyed !== true) {
-      this._isDestroyed = true;
       Object.values(this._scenes).forEach(scene => scene.destroy());
       let nodeKeys = Object.keys(this._children);
       let keys = Object.entries(this._children)
@@ -52,6 +61,7 @@ export default class Node {
         );
       this._scenes = {};
       this._children = {};
+      this._isDestroyed = true;
       return keys;
     }
     return null;
@@ -185,6 +195,26 @@ export default class Node {
       return this._arenaStore;
     }
     return null;
+  }
+
+  subscribe(
+    care: Record<string, Record<string, string[]>>,
+    cb: (isValid: boolean) => void
+  ) {
+    if (this._isDestroyed !== true) {
+      let observer = this._arenaStore.subscribe(
+        this.getId() as string,
+        care,
+        cb
+      );
+      this._observers.push(observer);
+      return observer;
+    }
+    return null;
+  }
+
+  unsubscribe(observers: Observer[]) {
+
   }
 
   getSceneEntity(sceneName: string) {

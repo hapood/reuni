@@ -107,17 +107,33 @@ export default class ArenaStore {
     let scene = node.ref.addScene(sceneName, RawScene);
     this._observers.forEach(observer => {
       let careNodeIdList = Object.keys(observer.care);
+      let isObserver = false;
       for (let i = 0; i < careNodeIdList.length; i++) {
         let careNodeId = careNodeIdList[i];
         if (careNodeId === nodeId) {
           let careSceneNameList = Object.keys(observer.care[careNodeId]);
           for (let j = 0; j < careSceneNameList.length; j++) {
             if (sceneName === careSceneNameList[j]) {
-              observer.cb(true);
+              isObserver = true;
               break;
             }
           }
           break;
+        }
+      }
+      if (isObserver !== false) {
+        let isCb = true;
+        let careNodeIdList = Object.keys(observer.care);
+        for (let i = 0; i < careNodeIdList.length; i++) {
+          let nodeId = careNodeIdList[i];
+          let node = this.getNode(nodeId) as Node;
+          if (node.hasScenes(Object.keys(observer.care[nodeId])) !== true) {
+            isCb = false;
+            break;
+          }
+        }
+        if (isCb !== false) {
+          observer.cb(true);
         }
       }
     });
@@ -286,7 +302,11 @@ export default class ArenaStore {
   }
 
   getNode(nodeId: string) {
-    return this._nodeDict[nodeId].ref;
+    let nodeItem = this._nodeDict[nodeId];
+    if (nodeItem == null) {
+      return null;
+    }
+    return nodeItem.ref;
   }
 }
 

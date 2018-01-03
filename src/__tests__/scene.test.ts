@@ -1,10 +1,10 @@
 import { createArena, Node, getTaskDescriptor } from "src";
-import SceneForTest from "./SceneForTest";
+import MonoScene from "./MonoScene";
 
 it("Scene works with subscribe", done => {
   let arenaSotre = createArena();
   let node1 = arenaSotre.mountNode(null, "node1");
-  let sceneName = node1.addScene("sceneForTest", SceneForTest) as string;
+  let sceneName = node1.addScene("sceneForTest", MonoScene) as string;
   let cbId = 0;
   node1.subscribe(
     {
@@ -13,7 +13,7 @@ it("Scene works with subscribe", done => {
       }
     },
     (isValid: boolean) => {
-      let scene: SceneForTest =
+      let scene: MonoScene =
         isValid == true ? node1.getScene(sceneName) : null;
       switch (cbId) {
         case 0:
@@ -30,7 +30,7 @@ it("Scene works with subscribe", done => {
       }
     }
   );
-  let scene: SceneForTest = node1.getScene(sceneName);
+  let scene: MonoScene = node1.getScene(sceneName);
   let t = scene.task();
   t.then(() => node1.deleteScene(sceneName));
 });
@@ -38,7 +38,7 @@ it("Scene works with subscribe", done => {
 it("Scene works with cancel", done => {
   let arenaSotre = createArena();
   let node1 = arenaSotre.mountNode(null, "node1");
-  let sceneName = node1.addScene("sceneForTest", SceneForTest) as string;
+  let sceneName = node1.addScene("sceneForTest", MonoScene) as string;
   node1.subscribe(
     {
       $: {
@@ -46,12 +46,12 @@ it("Scene works with cancel", done => {
       }
     },
     (isValid: boolean) => {
-      let scene: SceneForTest = node1.getScene(sceneName);
+      let scene: MonoScene = node1.getScene(sceneName);
       expect(scene.cnt).toBe(2);
       done();
     }
   );
-  let scene: SceneForTest = node1.getScene(sceneName);
+  let scene: MonoScene = node1.getScene(sceneName);
   let t = scene.cancelable();
   let task = getTaskDescriptor(t).cancel();
   scene.addAsync(2);

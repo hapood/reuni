@@ -12,12 +12,12 @@ export type NodeDictItem = {
 
 export type NodeDict = Record<string, NodeDictItem>;
 
-export type ActionDictItem = {
+export type TaskDictItem = {
   type: PropertyType;
-  action: () => void;
+  task: () => void;
 };
 
-export type ActionDict = Record<string, ActionDictItem>;
+export type TaskDict = Record<string, TaskDictItem>;
 
 export type TaskItem = {
   id: string;

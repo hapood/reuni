@@ -32,7 +32,7 @@ it("tests ArenaSotre add/delete Scene", () => {
   expect(sceneName1).toBe("scene1");
   node1.deleteScene(sceneName1);
   let keys = Object.keys(
-    arenaSotre.getNode(node1.getId() as string).getScenes()
+    (arenaSotre.getNode(node1.getId() as string) as Node).getScenes()
   );
   expect(keys.length).toBe(1);
   node1.destroy();

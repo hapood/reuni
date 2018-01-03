@@ -22,10 +22,7 @@ export default class Node {
   }
 
   getId() {
-    if (this._nodeItem.isDestroyed() !== true) {
-      return this._nodeItem.getId();
-    }
-    return null;
+    return this._nodeItem.getId();
   }
 
   isDestroy() {
@@ -36,10 +33,7 @@ export default class Node {
     care: Record<string, Record<string, string[]>>,
     cb: (isValid: boolean) => void
   ) {
-    if (this._nodeItem.isDestroyed() !== true) {
-      return this._arenaStore.subscribe(this.getId() as string, care, cb);
-    }
-    return null;
+    return this._nodeItem.subscribe(care, cb);
   }
 
   addScene(sceneName: string, RawScene: new () => any) {

@@ -4,5 +4,6 @@ export {
   observable,
   task,
   TaskDescriptor,
-  getTaskDescriptor
+  getTaskDescriptor,
+  scene
 } from "./api";

@@ -2,7 +2,7 @@ import Node from "./Node";
 import { buildSceneEntity, actionProxy, asyncActionProxy } from "./utils";
 import TaskManager from "./TaskManager";
 import Task from "../api/TaskDescriptor";
-import { ActionDict } from "./types";
+import { TaskDict, Observer } from "./types";
 import PropertyType from "../api/PropertyType";
 import { getCache, cache } from "../api/decorator";
 
@@ -11,15 +11,17 @@ export default class Scene {
   private _state: any;
   private _nextState: any;
   private _isDestroyed: boolean;
-  private _actionDict: ActionDict;
+  private _actionDict: TaskDict;
   private _actions: Record<string, () => void>;
   private _node: Node;
   private _entity: any;
   private _taskDict: Record<string, Record<string, Task>>;
+  private _isValid: boolean;
+  private _observer: Observer;
 
   constructor(sceneName: string, RawScene: new () => any, node: Node) {
     this._name = sceneName;
-    let actionsDict: ActionDict = {};
+    let actionsDict: TaskDict = {};
     let stateDict: any = {};
     let rawScene: any = new RawScene();
     let propertyDict = getCache(RawScene.prototype);
@@ -27,40 +29,40 @@ export default class Scene {
     let taskDict: Record<string, Record<string, Task>> = {};
     let bindedActions: Record<string, () => void> = {};
     let oAction;
-    let arenaStore = node.getArenaStore();
-    Object.entries(propertyDict).forEach(
-      ([key, type]: [string, PropertyType]) => {
-        switch (type) {
-          case PropertyType.OBSERVABLE:
-            taskDict[key] = {};
-            stateDict[key] = rawScene[key];
-            break;
-          case PropertyType.ACTION:
-            oAction = rawScene[key];
-            taskDict[key] = {};
-            actionsDict[key] = {
-              type: PropertyType.ACTION,
-              action: oAction
-            };
-            bindedActions[key] = actionProxy.bind(null, key, oAction, this);
-            break;
-          case PropertyType.ASYNC_ACTION:
-            oAction = rawScene[key];
-            taskDict[key] = {};
-            actionsDict[key] = {
-              type: PropertyType.ASYNC_ACTION,
-              action: oAction
-            };
-            bindedActions[key] = asyncActionProxy.bind(
-              null,
-              key,
-              oAction,
-              this
-            );
-            break;
-        }
+    let subscribeDict: Record<string, Record<string, string[]>> = {};
+
+    Object.entries(propertyDict).forEach(([key, item]) => {
+      switch (item.type) {
+        case PropertyType.OBSERVABLE:
+          taskDict[key] = {};
+          stateDict[key] = rawScene[key];
+          break;
+        case PropertyType.TASK:
+          oAction = rawScene[key];
+          taskDict[key] = {};
+          actionsDict[key] = {
+            type: PropertyType.TASK,
+            task: oAction
+          };
+          bindedActions[key] = actionProxy.bind(null, key, oAction, this);
+          break;
+        case PropertyType.ASYNC_TASK:
+          oAction = rawScene[key];
+          taskDict[key] = {};
+          actionsDict[key] = {
+            type: PropertyType.ASYNC_TASK,
+            task: oAction
+          };
+        case PropertyType.SCENE:
+          let careScenes = subscribeDict[item.value.nodeName];
+          if (subscribeDict[item.value.nodeName] == null) {
+            careScenes = {};
+            subscribeDict[item.value.nodeName] = careScenes;
+          }
+          careScenes[item.value.scene] = [];
+          break;
       }
-    );
+    });
     this._state = stateDict;
     this._nextState = Object.assign({}, stateDict);
     this._taskDict = taskDict;
@@ -68,11 +70,23 @@ export default class Scene {
     this._actions = bindedActions;
     this._isDestroyed = false;
     this._node = node;
+    this._observer = node.subscribe(subscribeDict, () => {
+      this.setIsValid;
+    });
     this._entity = buildSceneEntity(this, stateDict, bindedActions);
+    this._isValid = false;
   }
 
   isDestroy() {
     return this._isDestroyed;
+  }
+
+  setIsValid(isValid: boolean) {
+    this._isValid = isValid;
+  }
+
+  isValid() {
+    return this._isValid;
   }
 
   addTask(actionName: string, t: Task) {
@@ -114,7 +128,9 @@ export default class Scene {
   }
 
   destroy() {
-    this._isDestroyed = true;
+    if (this._isDestroyed !== true) {
+      this._isDestroyed = true;
+    }
   }
 
   replaceState(state: any) {
