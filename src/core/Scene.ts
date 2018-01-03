@@ -1,5 +1,5 @@
 import Node from "./Node";
-import { buildSceneEntity, actionProxy, asyncActionProxy } from "./utils";
+import { buildSceneEntity, taskProxy, asyncTaskProxy } from "./utils";
 import TaskManager from "./TaskManager";
 import Task from "../api/TaskDescriptor";
 import { TaskDict, Observer } from "./types";
@@ -11,47 +11,47 @@ export default class Scene {
   private _state: any;
   private _nextState: any;
   private _isDestroyed: boolean;
-  private _actionDict: TaskDict;
-  private _actions: Record<string, () => void>;
+  private _taskDict: TaskDict;
+  private _taskCreators: Record<string, () => void>;
   private _node: Node;
   private _entity: any;
-  private _taskDict: Record<string, Record<string, Task>>;
+  private _taskDesrDict: Record<string, Record<string, Task>>;
   private _isValid: boolean;
   private _observer: Observer;
 
   constructor(sceneName: string, RawScene: new () => any, node: Node) {
     this._name = sceneName;
-    let actionsDict: TaskDict = {};
+    let taskDict: TaskDict = {};
     let stateDict: any = {};
     let rawScene: any = new RawScene();
     let propertyDict = getCache(RawScene.prototype);
     let taskManager = node.getTaskManager();
-    let taskDict: Record<string, Record<string, Task>> = {};
-    let bindedActions: Record<string, () => void> = {};
-    let oAction;
+    let taskDesrDict: Record<string, Record<string, Task>> = {};
+    let taskCreators: Record<string, () => void> = {};
+    let tmpTask;
     let subscribeDict: Record<string, Record<string, string[]>> = {};
 
     Object.entries(propertyDict).forEach(([key, item]) => {
       switch (item.type) {
         case PropertyType.OBSERVABLE:
-          taskDict[key] = {};
+          taskDesrDict[key] = {};
           stateDict[key] = rawScene[key];
           break;
         case PropertyType.TASK:
-          oAction = rawScene[key];
-          taskDict[key] = {};
-          actionsDict[key] = {
+          tmpTask = rawScene[key];
+          taskDesrDict[key] = {};
+          taskDict[key] = {
             type: PropertyType.TASK,
-            task: oAction
+            task: tmpTask
           };
-          bindedActions[key] = actionProxy.bind(null, key, oAction, this);
+          taskCreators[key] = taskProxy.bind(null, key, tmpTask, this);
           break;
         case PropertyType.ASYNC_TASK:
-          oAction = rawScene[key];
-          taskDict[key] = {};
-          actionsDict[key] = {
+          tmpTask = rawScene[key];
+          taskDesrDict[key] = {};
+          taskDict[key] = {
             type: PropertyType.ASYNC_TASK,
-            task: oAction
+            task: tmpTask
           };
         case PropertyType.SCENE:
           let careScenes = subscribeDict[item.value.nodeName];
@@ -65,15 +65,15 @@ export default class Scene {
     });
     this._state = stateDict;
     this._nextState = Object.assign({}, stateDict);
+    this._taskDesrDict = taskDesrDict;
     this._taskDict = taskDict;
-    this._actionDict = actionsDict;
-    this._actions = bindedActions;
+    this._taskCreators = taskCreators;
     this._isDestroyed = false;
     this._node = node;
     this._observer = node.subscribe(subscribeDict, () => {
       this.setIsValid;
     });
-    this._entity = buildSceneEntity(this, stateDict, bindedActions);
+    this._entity = buildSceneEntity(this, stateDict, taskCreators);
     this._isValid = false;
   }
 
@@ -89,16 +89,16 @@ export default class Scene {
     return this._isValid;
   }
 
-  addTask(actionName: string, t: Task) {
-    let actionTrans = this._taskDict[actionName];
-    if (actionTrans == null) {
+  addTask(taskName: string, t: Task) {
+    let taskDescriptors = this._taskDesrDict[taskName];
+    if (taskDescriptors == null) {
       throw new Error(
         `Error occurred while adding task to scene [${
           this._name
-        }], action name [${actionName}] does not exist.`
+        }], task name [${taskName}] does not exist.`
       );
     }
-    actionTrans[t.getId()] = t;
+    taskDescriptors[t.getId()] = t;
     return t;
   }
 
@@ -109,17 +109,17 @@ export default class Scene {
     return null;
   }
 
-  deleteTask(actionName: string, tid: string) {
-    let actionTrans = this._taskDict[actionName];
-    if (actionTrans == null) {
+  deleteTask(taskName: string, tid: string) {
+    let taskDescriptors = this._taskDesrDict[taskName];
+    if (taskDescriptors == null) {
       throw new Error(
         `Error occurred while adding task to scene [${
           this._name
-        }], action name [${actionName}] does not exist.`
+        }], task name [${taskName}] does not exist.`
       );
     }
-    let t = actionTrans[tid];
-    delete actionTrans[tid];
+    let t = taskDescriptors[tid];
+    delete taskDescriptors[tid];
     return t;
   }
 
@@ -154,8 +154,8 @@ export default class Scene {
     }
   }
 
-  getActionDict() {
-    return this._actionDict;
+  getTaskDict() {
+    return this._taskDict;
   }
 
   getState() {
@@ -168,7 +168,7 @@ export default class Scene {
 
   commit() {
     if (this._isDestroyed !== true) {
-      this._entity = buildSceneEntity(this, this._nextState, this._actions);
+      this._entity = buildSceneEntity(this, this._nextState, this._taskCreators);
       let oldKeys = Object.keys(this._state);
       let newKeys = Object.keys(this._nextState);
       let dirtyKeyDict: Record<string, boolean> = {};
