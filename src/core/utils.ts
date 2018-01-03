@@ -1,10 +1,10 @@
-import { NodeDict, TransItem, ActionDict, ActionDictItem } from "./types";
+import { NodeDict, TaskItem, ActionDict, ActionDictItem } from "./types";
 import PropertyType from "../api/PropertyType";
 import Scene from "./Scene";
-import TransManager from "./TransManager";
-import Transaction from "../api/Transaction";
-import { tKey, asKey } from "../api/Transaction";
-import TransactionStatus from "../api/TransactionStatus";
+import TaskManager from "./TaskManager";
+import Task from "../api/TaskDescriptor";
+import { tKey, asKey } from "../api/TaskDescriptor";
+import TaskStatus from "../api/TaskStatus";
 import ArenaStore from "src/core/ArenaStore";
 import Node from "./Node";
 
@@ -44,11 +44,7 @@ export function buildSceneEntity(scene: Scene, state: any, actions: any): any {
   return entity as any;
 }
 
-function buildTransactionEntity(
-  scene: Scene,
-  arenaStore: ArenaStore,
-  t: Transaction
-) {
+function buildTaskEntity(scene: Scene, arenaStore: ArenaStore, t: Task) {
   let handler = {
     get: function(target: Scene, name: any) {
       let state = scene.getState();
@@ -78,7 +74,7 @@ function buildTransactionEntity(
         return arenaStore;
       }
       throw new Error(
-        `Error occurred while reading scene [${scene.getName()}] in transition [${t.getId()}], unknown property [${name}].`
+        `Error occurred while reading scene [${scene.getName()}] in task [${t.getId()}], unknown property [${name}].`
       );
     },
     set: function(target: Scene, name: string, value: any) {
@@ -91,7 +87,7 @@ function buildTransactionEntity(
         return false;
       }
       throw new Error(
-        `Error occurred while writting scene [${scene.getName()}] in transition [${t.getId()}], property [${name}] is not observable.`
+        `Error occurred while writting scene [${scene.getName()}] in task [${t.getId()}], property [${name}] is not observable.`
       );
     }
   };
@@ -103,10 +99,10 @@ function tActionProxy(
   f: () => void,
   scene: Scene,
   arenaStore: ArenaStore,
-  t: Transaction,
+  t: Task,
   ...args: any[]
 ) {
-  let entity = buildTransactionEntity(scene, arenaStore, t);
+  let entity = buildTaskEntity(scene, arenaStore, t);
   return f.apply(entity, args);
 }
 
@@ -118,18 +114,18 @@ export function actionProxy(
 ) {
   if (scene.isDestroy() !== true) {
     let arenaStore = (scene.getNode() as Node).getArenaStore() as ArenaStore;
-    let transManager = arenaStore.getTransManager();
-    let t = transManager.startTrans();
-    scene.addTrans(actionName, t);
+    let taskManager = arenaStore.getTaskManager();
+    let t = taskManager.startTask();
+    scene.addTask(actionName, t);
     let tid = t.getId();
-    t.subscribe((tStatus: TransactionStatus) => {
-      if (tStatus === TransactionStatus.CANCELED) {
-        scene.deleteTrans(actionName, tid);
+    t.subscribe((tStatus: TaskStatus) => {
+      if (tStatus === TaskStatus.CANCELED) {
+        scene.deleteTask(actionName, tid);
       }
     });
-    let entity = buildTransactionEntity(scene, arenaStore, t);
+    let entity = buildTaskEntity(scene, arenaStore, t);
     let r = f.apply(entity, args);
-    transManager.doneTrans(tid);
+    taskManager.finishTask(tid);
     arenaStore.commit();
     return r;
   }
@@ -144,21 +140,21 @@ export function asyncActionProxy(
 ) {
   if (scene.isDestroy() !== true) {
     let arenaStore = (scene.getNode() as Node).getArenaStore() as ArenaStore;
-    let transManager = arenaStore.getTransManager();
-    let t = transManager.startTrans();
-    scene.addTrans(actionName, t);
+    let taskManager = arenaStore.getTaskManager();
+    let t = taskManager.startTask();
+    scene.addTask(actionName, t);
     let tid = t.getId();
-    t.subscribe((tStatus: TransactionStatus) => {
-      if (tStatus === TransactionStatus.CANCELED) {
-        scene.deleteTrans(actionName, tid);
+    t.subscribe((tStatus: TaskStatus) => {
+      if (tStatus === TaskStatus.CANCELED) {
+        scene.deleteTask(actionName, tid);
         arenaStore.commit();
       }
     });
-    let entity = buildTransactionEntity(scene, arenaStore, t);
+    let entity = buildTaskEntity(scene, arenaStore, t);
     let r = f.apply(entity, args);
     r.then(() => {
-      transManager.doneTrans(tid);
-      scene.deleteTrans(actionName, tid);
+      taskManager.finishTask(tid);
+      scene.deleteTask(actionName, tid);
       arenaStore.commit();
     });
     r[tKey] = t;

@@ -2,7 +2,7 @@ import { NodeDict, NodeDictItem, Observer } from "./types";
 import { genId } from "./utils";
 import Scene from "./Scene";
 import NodeAPI from "../api/Node";
-import TransManager from "./TransManager";
+import TaskManager from "./TaskManager";
 import Node from "./Node";
 
 export default class ArenaStore {
@@ -10,7 +10,7 @@ export default class ArenaStore {
   private _rootId: string;
   private _observers: Observer[];
   private _dirtyNodes: Record<string, Record<string, Record<string, boolean>>>;
-  private _transManager: TransManager;
+  private _taskManager: TaskManager;
 
   constructor() {
     let nodeId = genId();
@@ -25,13 +25,13 @@ export default class ArenaStore {
         name: rootName
       }
     };
-    this._transManager = new TransManager();
+    this._taskManager = new TaskManager();
     this._observers = [];
     this._dirtyNodes = {};
   }
 
-  getTransManager() {
-    return this._transManager;
+  getTaskManager() {
+    return this._taskManager;
   }
 
   getNodeDict() {

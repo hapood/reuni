@@ -1,5 +1,5 @@
 import Scene from "./Scene";
-import TransManager from "../core/TransManager";
+import TaskManager from "../core/TaskManager";
 import ArenaStore from "./ArenaStore";
 
 export default class Node {
@@ -165,9 +165,9 @@ export default class Node {
     return this._children[nodeId] != null;
   }
 
-  getTransManager() {
+  getTaskManager() {
     if (this._isDestroyed !== true) {
-      return this._arenaStore.getTransManager();
+      return this._arenaStore.getTaskManager();
     }
     return null;
   }

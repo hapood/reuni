@@ -1,20 +1,20 @@
-import { observable, action } from "src";
+import { observable, task } from "src";
 
 export default class MockScene {
   @observable name = "test";
   @observable cnt = 0;
 
-  @action
+  @task
   add(num: number) {
     this.cnt += num;
   }
 
-  @action
+  @task
   reset() {
     this.cnt = 0;
   }
 
-  @action.async
+  @task.async
   async addAsync(num: number) {
     return new Promise(resolve => {
       setTimeout(() => {
@@ -24,14 +24,14 @@ export default class MockScene {
     });
   }
 
-  @action.async
-  async transaction() {
+  @task.async
+  async task() {
     this.add(10);
     await this.addAsync(5);
     this.cnt *= 2;
   }
 
-  @action.async
+  @task.async
   async cancelable() {
     return new Promise(resolve => {
       setTimeout(() => {

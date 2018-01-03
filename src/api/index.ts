@@ -1,5 +1,5 @@
 export { default as Node } from "./Node";
 export { default as observable } from "./observable";
-export { default as action } from "./action";
-export { default as Transaction } from "./Transaction";
-export { default as getTransaction } from "./getTransaction";
+export { default as task } from "./task";
+export { default as TaskDescriptor } from "./TaskDescriptor";
+export { default as getTaskDescriptor } from "./getTaskDescriptor";

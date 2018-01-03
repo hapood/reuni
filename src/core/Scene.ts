@@ -1,7 +1,7 @@
 import Node from "./Node";
 import { buildSceneEntity, actionProxy, asyncActionProxy } from "./utils";
-import TransManager from "./TransManager";
-import Transaction from "../api/Transaction";
+import TaskManager from "./TaskManager";
+import Task from "../api/TaskDescriptor";
 import { ActionDict } from "./types";
 import PropertyType from "../api/PropertyType";
 import { getCache, cache } from "../api/decorator";
@@ -15,7 +15,7 @@ export default class Scene {
   private _actions: Record<string, () => void>;
   private _node: Node;
   private _entity: any;
-  private _transDict: Record<string, Record<string, Transaction>>;
+  private _taskDict: Record<string, Record<string, Task>>;
 
   constructor(sceneName: string, RawScene: new () => any, node: Node) {
     this._name = sceneName;
@@ -23,8 +23,8 @@ export default class Scene {
     let stateDict: any = {};
     let rawScene: any = new RawScene();
     let propertyDict = getCache(RawScene.prototype);
-    let transManager = node.getTransManager();
-    let transDict: Record<string, Record<string, Transaction>> = {};
+    let taskManager = node.getTaskManager();
+    let taskDict: Record<string, Record<string, Task>> = {};
     let bindedActions: Record<string, () => void> = {};
     let oAction;
     let arenaStore = node.getArenaStore();
@@ -32,12 +32,12 @@ export default class Scene {
       ([key, type]: [string, PropertyType]) => {
         switch (type) {
           case PropertyType.OBSERVABLE:
-            transDict[key] = {};
+            taskDict[key] = {};
             stateDict[key] = rawScene[key];
             break;
           case PropertyType.ACTION:
             oAction = rawScene[key];
-            transDict[key] = {};
+            taskDict[key] = {};
             actionsDict[key] = {
               type: PropertyType.ACTION,
               action: oAction
@@ -46,7 +46,7 @@ export default class Scene {
             break;
           case PropertyType.ASYNC_ACTION:
             oAction = rawScene[key];
-            transDict[key] = {};
+            taskDict[key] = {};
             actionsDict[key] = {
               type: PropertyType.ASYNC_ACTION,
               action: oAction
@@ -63,7 +63,7 @@ export default class Scene {
     );
     this._state = stateDict;
     this._nextState = Object.assign({}, stateDict);
-    this._transDict = transDict;
+    this._taskDict = taskDict;
     this._actionDict = actionsDict;
     this._actions = bindedActions;
     this._isDestroyed = false;
@@ -75,11 +75,11 @@ export default class Scene {
     return this._isDestroyed;
   }
 
-  addTrans(actionName: string, t: Transaction) {
-    let actionTrans = this._transDict[actionName];
+  addTask(actionName: string, t: Task) {
+    let actionTrans = this._taskDict[actionName];
     if (actionTrans == null) {
       throw new Error(
-        `Error occurred while adding transaction to scene [${
+        `Error occurred while adding task to scene [${
           this._name
         }], action name [${actionName}] does not exist.`
       );
@@ -95,11 +95,11 @@ export default class Scene {
     return null;
   }
 
-  deleteTrans(actionName: string, tid: string) {
-    let actionTrans = this._transDict[actionName];
+  deleteTask(actionName: string, tid: string) {
+    let actionTrans = this._taskDict[actionName];
     if (actionTrans == null) {
       throw new Error(
-        `Error occurred while adding transaction to scene [${
+        `Error occurred while adding task to scene [${
           this._name
         }], action name [${actionName}] does not exist.`
       );

@@ -1,11 +1,11 @@
-import { observable, action } from "src";
+import { observable, task } from "src";
 
 export default class MockScene {
   @observable observable = "test";
 
-  @action
+  @task
   action() {}
 
-  @action.async
+  @task.async
   async asyncAction(num: number) {}
 }

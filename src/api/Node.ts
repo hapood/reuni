@@ -1,5 +1,5 @@
 import Scene from "../core/Scene";
-import TransManager from "../core/TransManager";
+import TaskManager from "../core/TaskManager";
 import NodeItem from "../core/Node";
 import ArenaStore from "../core/ArenaStore";
 

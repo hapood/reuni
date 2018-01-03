@@ -1,4 +1,4 @@
-import { createArena, ArenaStore, Node, NodeAPI, getTransaction } from "src";
+import { createArena, Node, getTaskDescriptor } from "src";
 import SceneForTest from "./SceneForTest";
 
 it("Scene works with subscribe", done => {
@@ -31,7 +31,7 @@ it("Scene works with subscribe", done => {
     }
   );
   let scene: SceneForTest = node1.getScene(sceneName);
-  let t = scene.transaction();
+  let t = scene.task();
   t.then(() => node1.deleteScene(sceneName));
 });
 
@@ -53,6 +53,6 @@ it("Scene works with cancel", done => {
   );
   let scene: SceneForTest = node1.getScene(sceneName);
   let t = scene.cancelable();
-  let transaction = getTransaction(t).cancel();
+  let task = getTaskDescriptor(t).cancel();
   scene.addAsync(2);
 });

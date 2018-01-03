@@ -1,19 +1,19 @@
 import PropertyType from "./PropertyType";
 import { getCache } from "./decorator";
 
-export type ActionDecorator = {
+export type TaskDecorator = {
   (target: Object, propertyKey: string): void;
   async: (target: Object, propertyKey: string) => void;
 };
 
-const action = function(target: any, propertyKey: string) {
+const task = function(target: any, propertyKey: string) {
   let cache = getCache(target);
   cache[propertyKey] = PropertyType.ACTION;
-} as ActionDecorator;
+} as TaskDecorator;
 
-action.async = function(target: any, propertyKey: string) {
+task.async = function(target: any, propertyKey: string) {
   let cache = getCache(target);
   cache[propertyKey] = PropertyType.ASYNC_ACTION;
 };
 
-export default action;
+export default task;

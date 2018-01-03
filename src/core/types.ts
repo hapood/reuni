@@ -1,6 +1,6 @@
 import Scene from "./Scene";
 import Node from "./Node";
-import TransactionStatus from "../api/TransactionStatus";
+import TaskStatus from "../api/TaskStatus";
 import PropertyType from "../api/PropertyType";
 
 export type NodeDictItem = {
@@ -19,11 +19,11 @@ export type ActionDictItem = {
 
 export type ActionDict = Record<string, ActionDictItem>;
 
-export type TransItem = {
+export type TaskItem = {
   id: string;
   isDone: boolean;
   isCanceled: boolean;
-  observers: ((status: TransactionStatus) => void)[];
+  observers: ((status: TaskStatus) => void)[];
 };
 
 export type NodeItem = {
