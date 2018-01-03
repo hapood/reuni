@@ -144,10 +144,11 @@ export default class ArenaStore {
     let node = this._nodeDict[nodeId];
     if (node == null) {
       throw new Error(
-        `Error occurred while adding scene, node [${nodeId}] does not exist.`
+        `Error occurred while deleting scene, node [${nodeId}] does not exist.`
       );
     }
-    let scene = node.ref.deleteScene(sceneName);
+    let scene = node.ref.deleteScene(sceneName) as Scene;
+    this.unsubscribe([scene.getObserver()]);
     this._observers.forEach(observer => {
       let careNodeIdList = Object.keys(observer.care);
       for (let i = 0; i < careNodeIdList.length; i++) {
@@ -185,16 +186,22 @@ export default class ArenaStore {
       });
     }
     delete this._nodeDict[nodeId];
+    let newObservers: Observer[] = [];
     this._observers.forEach(observer => {
+      let isValid = true;
       let careNodeIdList = Object.keys(observer.care);
       for (let i = 0; i < careNodeIdList.length; i++) {
         let careNodeId = careNodeIdList[i];
         if (careNodeId === nodeId) {
-          observer.cb(false);
+          isValid = false;
           break;
         }
       }
+      if (isValid !== false) {
+        newObservers.push(observer);
+      }
     });
+    this._observers = newObservers;
     return node.ref;
   }
 
@@ -227,7 +234,7 @@ export default class ArenaStore {
       }
       newCare[nodeId] = care[nodeName];
     });
-    let curObserver = { care: newCare, cb };
+    let curObserver: Observer = { care: newCare, cb };
     this._observers.push(curObserver);
     return curObserver;
   }

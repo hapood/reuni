@@ -5,6 +5,7 @@ import Task from "../api/TaskDescriptor";
 import { TaskDict, Observer } from "./types";
 import PropertyType from "../api/PropertyType";
 import { getCache, cache } from "../api/decorator";
+import ArenaStore from "src/core/ArenaStore";
 
 export default class Scene {
   private _name: string;
@@ -12,7 +13,6 @@ export default class Scene {
   private _nextState: any;
   private _isDestroyed: boolean;
   private _taskDict: TaskDict;
-  private _taskCreators: Record<string, () => void>;
   private _node: Node;
   private _entity: any;
   private _taskDesrDict: Record<string, Record<string, Task>>;
@@ -27,9 +27,8 @@ export default class Scene {
     let propertyDict = getCache(RawScene.prototype);
     let taskManager = node.getTaskManager();
     let taskDesrDict: Record<string, Record<string, Task>> = {};
-    let taskCreators: Record<string, () => void> = {};
     let tmpTask;
-    let subscribeDict: Record<string, Record<string, string[]>> = {};
+    let subscribeDict: Record<string, Record<string, string[]>> = { $: {} };
 
     Object.entries(propertyDict).forEach(([key, item]) => {
       switch (item.type) {
@@ -44,7 +43,6 @@ export default class Scene {
             type: PropertyType.TASK,
             task: tmpTask
           };
-          taskCreators[key] = taskProxy.bind(null, key, tmpTask, this);
           break;
         case PropertyType.ASYNC_TASK:
           tmpTask = rawScene[key];
@@ -67,14 +65,21 @@ export default class Scene {
     this._nextState = Object.assign({}, stateDict);
     this._taskDesrDict = taskDesrDict;
     this._taskDict = taskDict;
-    this._taskCreators = taskCreators;
     this._isDestroyed = false;
     this._node = node;
-    this._observer = node.subscribe(subscribeDict, () => {
-      this.setIsValid;
-    });
-    this._entity = buildSceneEntity(this, stateDict, taskCreators);
+    this._observer = node.subscribe(subscribeDict, isValid => {
+      this.setIsValid(isValid);
+    }) as Observer;
+    this._entity = buildSceneEntity(
+      this,
+      stateDict,
+      node.getArenaStore()
+    );
     this._isValid = false;
+  }
+
+  getObserver() {
+    return this._observer;
   }
 
   isDestroy() {
@@ -103,10 +108,7 @@ export default class Scene {
   }
 
   getNode() {
-    if (this._isDestroyed !== true) {
-      return this._node;
-    }
-    return null;
+    return this._node;
   }
 
   deleteTask(taskName: string, tid: string) {
@@ -128,9 +130,7 @@ export default class Scene {
   }
 
   destroy() {
-    if (this._isDestroyed !== true) {
-      this._isDestroyed = true;
-    }
+    this._isDestroyed = true;
   }
 
   replaceState(state: any) {
@@ -168,7 +168,11 @@ export default class Scene {
 
   commit() {
     if (this._isDestroyed !== true) {
-      this._entity = buildSceneEntity(this, this._nextState, this._taskCreators);
+      this._entity = buildSceneEntity(
+        this,
+        this._nextState,
+        this._node.getArenaStore()
+      );
       let oldKeys = Object.keys(this._state);
       let newKeys = Object.keys(this._nextState);
       let dirtyKeyDict: Record<string, boolean> = {};
