@@ -1,10 +1,10 @@
 import Node from "./Node";
-import { createSceneEntity, actionProxy, asyncActionProxy } from "./utils";
+import { buildSceneEntity, actionProxy, asyncActionProxy } from "./utils";
 import TransManager from "./TransManager";
 import Transaction from "./Transaction";
 import { ActionDict } from "./types";
 import PropertyType from "../api/PropertyType";
-import { cacheDictKey } from "../api/decorator";
+import { getCache, cache } from "../api/decorator";
 
 export default class Scene {
   private _name: string;
@@ -14,7 +14,7 @@ export default class Scene {
   private _actionDict: ActionDict;
   private _actions: Record<string, () => void>;
   private _node: Node;
-  private _entity: new () => any;
+  private _entity: any;
   private _transDict: Record<string, Record<string, Transaction>>;
 
   constructor(sceneName: string, RawScene: new () => any, node: Node) {
@@ -22,11 +22,12 @@ export default class Scene {
     let actionsDict: ActionDict = {};
     let stateDict: any = {};
     let rawScene: any = new RawScene();
-    let propertyDict = rawScene[cacheDictKey];
-    let transation = node.getTransManager();
+    let propertyDict = getCache(RawScene.prototype);
+    let transManager = node.getTransManager();
     let transDict: Record<string, Record<string, Transaction>> = {};
     let bindedActions: Record<string, () => void> = {};
     let oAction;
+    let arenaStore = node.getArenaStore();
     Object.entries(propertyDict).forEach(
       ([key, type]: [string, PropertyType]) => {
         switch (type) {
@@ -45,8 +46,8 @@ export default class Scene {
               null,
               key,
               oAction,
-              this.addTrans,
-              transation
+              this,
+              transManager
             );
             break;
           case PropertyType.ASYNC_ACTION:
@@ -56,12 +57,12 @@ export default class Scene {
               type: PropertyType.ASYNC_ACTION,
               action: oAction
             };
-            bindedActions[key] = actionProxy.bind(
+            bindedActions[key] = asyncActionProxy.bind(
               null,
               key,
               oAction,
-              this.addTrans,
-              transation
+              this,
+              transManager
             );
             break;
         }
@@ -74,7 +75,11 @@ export default class Scene {
     this._actions = bindedActions;
     this._isDestroyed = false;
     this._node = node;
-    this._entity = createSceneEntity(this, stateDict, actionsDict);
+    this._entity = buildSceneEntity(this, stateDict, bindedActions);
+  }
+
+  isDestroy() {
+    return this._isDestroyed;
   }
 
   addTrans(actionName: string, t: Transaction) {
@@ -83,13 +88,18 @@ export default class Scene {
       throw new Error(
         `Error occurred while adding transaction to scene [${
           this._name
-        }], action name [${{
-          actionName
-        }}] does not exist.`
+        }], action name [${actionName}] does not exist.`
       );
     }
     actionTrans[t.getId()] = t;
     return t;
+  }
+
+  getNode() {
+    if (this._isDestroyed !== true) {
+      return this._node;
+    }
+    return null;
   }
 
   deleteTrans(actionName: string, tid: string) {
@@ -98,9 +108,7 @@ export default class Scene {
       throw new Error(
         `Error occurred while adding transaction to scene [${
           this._name
-        }], action name [${{
-          actionName
-        }}] does not exist.`
+        }], action name [${actionName}] does not exist.`
       );
     }
     let t = actionTrans[tid];
@@ -151,7 +159,7 @@ export default class Scene {
 
   commit() {
     if (this._isDestroyed !== true) {
-      this._entity = createSceneEntity(this, this._nextState, this._actions);
+      this._entity = buildSceneEntity(this, this._nextState, this._actions);
       let oldKeys = Object.keys(this._state);
       let newKeys = Object.keys(this._nextState);
       let dirtyKeyDict: Record<string, boolean> = {};

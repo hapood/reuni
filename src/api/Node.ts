@@ -28,8 +28,15 @@ export default class Node {
     return null;
   }
 
-  isDestory() {
+  isDestroy() {
     return this._nodeItem.isDestroyed();
+  }
+
+  subscribe(care: Record<string, Record<string, string[]>>, cb: () => void) {
+    if (this._nodeItem.isDestroyed() !== true) {
+      return this._arenaStore.subscribe(this.getId() as string, care, cb);
+    }
+    return null;
   }
 
   addScene(sceneName: string, RawScene: new () => any) {
@@ -69,10 +76,14 @@ export default class Node {
     return null;
   }
 
-  getScene(sceneName: string) {
+  getScene(sceneName: string, nodeName: string = "$") {
     let nodeItem = this._nodeItem;
     if (nodeItem.isDestroyed() !== true) {
-      return nodeItem.getSceneEntity(sceneName);
+      return this._arenaStore.getSceneEntity(
+        this.getId() as string,
+        nodeName,
+        sceneName
+      );
     }
     return null;
   }

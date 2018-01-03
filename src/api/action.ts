@@ -1,5 +1,5 @@
 import PropertyType from "./PropertyType";
-import { cacheDictKey } from "./decorator";
+import { getCache } from "./decorator";
 
 export type ActionDecorator = {
   (target: Object, propertyKey: string): void;
@@ -7,19 +7,13 @@ export type ActionDecorator = {
 };
 
 const action = function(target: any, propertyKey: string) {
-  let cache = target[cacheDictKey];
-  if (cache == null) {
-    target[cacheDictKey] = cache = {};
-  }
-  cache[propertyKey] = { type: PropertyType.ACTION, value: propertyKey };
+  let cache = getCache(target);
+  cache[propertyKey] = PropertyType.ACTION;
 } as ActionDecorator;
 
 action.async = function(target: any, propertyKey: string) {
-  let cache = target[cacheDictKey];
-  if (cache == null) {
-    target[cacheDictKey] = cache = {};
-  }
-  cache[propertyKey] = { type: PropertyType.ASYNC_ACTION, value: propertyKey };
+  let cache = getCache(target);
+  cache[propertyKey] = PropertyType.ASYNC_ACTION;
 };
 
 export default action;

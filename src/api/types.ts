@@ -1,3 +1,6 @@
 import PropertyType from "./PropertyType";
 
-export type ScenePropertyRegister = (type: PropertyType, key: string) => void;
+export type ScenePropertyCache = {
+  ref: any;
+  dict: Record<string, PropertyType>;
+};

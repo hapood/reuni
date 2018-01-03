@@ -1,3 +1,3 @@
 export const tidKey = Symbol("tid");
 
-export const tmKey = Symbol("tansManager");
+export const asKey = Symbol("arenaStore");

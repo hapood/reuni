@@ -1,11 +1,12 @@
 import { SceneDict, TransItem, ActionDict, ActionDictItem } from "./types";
 import PropertyType from "../api/PropertyType";
-import { ScenePropertyRegister } from "../api/types";
 import Scene from "./Scene";
 import TransManager from "./TransManager";
 import Transaction from "./Transaction";
-import { tidKey, tmKey } from "../api/Transaction";
+import { tidKey, asKey } from "../api/Transaction";
 import TransactionStatus from "../api/TransactionStatus";
+import ArenaStore from "src/core/ArenaStore";
+import Node from "./Node";
 
 export function genId() {
   return (
@@ -16,9 +17,9 @@ export function genId() {
   );
 }
 
-export function createSceneEntity(scene: Scene, state: any, actions: any): any {
+export function buildSceneEntity(scene: Scene, state: any, actions: any): any {
   let handler = {
-    get: function(target: Scene, name: string) {
+    get: function(target: Scene, name: string | symbol) {
       if (state[name] != null) {
         return state[name];
       }
@@ -45,7 +46,7 @@ export function createSceneEntity(scene: Scene, state: any, actions: any): any {
 
 function buildTransactionEntity(
   scene: Scene,
-  transManager: TransManager,
+  arenaStore: ArenaStore,
   t: Transaction
 ) {
   let handler = {
@@ -56,13 +57,20 @@ function buildTransactionEntity(
       }
       let actions = scene.getActionDict();
       if (actions[name] != null) {
-        return tActionProxy.bind(null, actions[name], scene, transManager, t);
+        arenaStore.commit();
+        return tActionProxy.bind(
+          null,
+          actions[name].action,
+          scene,
+          arenaStore,
+          t
+        );
       }
       if (name === tidKey) {
         return t;
       }
-      if (name === tmKey) {
-        return transManager;
+      if (name === asKey) {
+        return arenaStore;
       }
       throw new Error(
         `Error occurred while reading scene [${scene.getName()}] in transition [${t.getId()}], unknown property [${name}].`
@@ -72,6 +80,7 @@ function buildTransactionEntity(
       let state = scene.getState();
       if (state[name] != null) {
         target.setValue(name, value);
+        console.log(t);
         return true;
       }
       throw new Error(
@@ -86,24 +95,12 @@ function buildTransactionEntity(
 function tActionProxy(
   f: () => void,
   scene: Scene,
-  transManager: TransManager,
+  arenaStore: ArenaStore,
   t: Transaction,
   ...args: any[]
 ) {
-  let entity = buildTransactionEntity(scene, transManager, t);
-  return tidGetterProxy(f.apply(entity, args), t);
-}
-
-function tidGetterProxy<V extends {}>(value: V, t: Transaction) {
-  let handler = {
-    get: function(target: V, name: any) {
-      if (name === tidKey) {
-        return t;
-      }
-      return (target as any)[name];
-    }
-  };
-  return new Proxy(value, handler);
+  let entity = buildTransactionEntity(scene, arenaStore, t);
+  return f.apply(entity, args);
 }
 
 export function actionProxy(
@@ -113,39 +110,46 @@ export function actionProxy(
   transManager: TransManager,
   ...args: any[]
 ) {
-  let t = transManager.startTrans();
-  scene.addTrans(actionName, t);
-  let tid = t.getId();
-  t.subscribe((tStatus: TransactionStatus) => {
-    if (tStatus === TransactionStatus.CANCELED) {
-      scene.deleteTrans(actionName, tid);
-    }
-  });
-  let entity = buildTransactionEntity(scene, transManager, t);
-  let r = f.apply(entity, args);
-  return tidGetterProxy(r, t);
+  if (scene.isDestroy() !== true) {
+    let t = transManager.startTrans();
+    scene.addTrans(actionName, t);
+    let tid = t.getId();
+    t.subscribe((tStatus: TransactionStatus) => {
+      if (tStatus === TransactionStatus.CANCELED) {
+        scene.deleteTrans(actionName, tid);
+      }
+    });
+    let arenaStore = (scene.getNode() as Node).getArenaStore() as ArenaStore;
+    let entity = buildTransactionEntity(scene, arenaStore, t);
+    let r = f.apply(entity, args);
+    return r;
+  }
+  return null;
 }
 
 export function asyncActionProxy(
   actionName: string,
   f: () => void,
   scene: Scene,
-  transManager: TransManager,
   ...args: any[]
 ) {
-  let t = transManager.startTrans();
-  scene.addTrans(actionName, t);
-  let tid = t.getId();
-  t.subscribe((tStatus: TransactionStatus) => {
-    if (tStatus === TransactionStatus.CANCELED) {
+  if (scene.isDestroy() !== true) {
+    let arenaStore = (scene.getNode() as Node).getArenaStore() as ArenaStore;
+    let transManager = arenaStore.getTransManager();
+    let t = transManager.startTrans();
+    scene.addTrans(actionName, t);
+    let tid = t.getId();
+    t.subscribe((tStatus: TransactionStatus) => {
+      if (tStatus === TransactionStatus.CANCELED) {
+        scene.deleteTrans(actionName, tid);
+      }
+    });
+    let entity = buildTransactionEntity(scene, arenaStore, t);
+    let r = f.apply(entity, args);
+    r.then(() => {
+      transManager.doneTrans(tid);
       scene.deleteTrans(actionName, tid);
-    }
-  });
-  let entity = buildTransactionEntity(scene, transManager, t);
-  let r = f.apply(entity, args);
-  r.then(() => {
-    transManager.doneTrans(tid);
-    scene.deleteTrans(actionName, tid);
-  });
-  return tidGetterProxy(r, t);
+    });
+    return r;
+  }
 }

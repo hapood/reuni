@@ -44,12 +44,15 @@ export default class Node {
       this._isDestroyed = true;
       Object.values(this._scenes).forEach(scene => scene.destroy());
       let nodeKeys = Object.keys(this._children);
-      return Object.entries(this._children)
+      let keys = Object.entries(this._children)
         .map(([key, child]) => child.destroy())
         .reduce(
           (prev, cur) => (cur == null ? prev : (prev as string[]).concat(cur)),
           nodeKeys
         );
+      this._scenes = {};
+      this._children = {};
+      return keys;
     }
     return null;
   }
@@ -95,39 +98,45 @@ export default class Node {
     sceneName: string,
     RawScene: new () => any
   ) {
-    if (this._scenes[sceneName] != null && this._isDestroyed !== true) {
-      throw new Error(
-        `Error occurred while adding scene to node [${
-          this._id
-        }], scene [${sceneName}] already exist.`
-      );
+    if (this._isDestroyed !== true) {
+      if (this._scenes[sceneName] != null) {
+        throw new Error(
+          `Error occurred while adding scene to node [${
+            this._id
+          }], scene [${sceneName}] already exist.`
+        );
+      }
+      let scene = new Scene(sceneName, RawScene, this);
+      this._scenes[sceneName] = scene;
+      return scene;
     }
-    let scene = new Scene(sceneName, RawScene, this);
-    this._scenes[sceneName] = scene;
-    return scene;
+    return null;
   }
 
   deleteScene(sceneName: string) {
-    let scene = this._scenes[sceneName];
-    if (this._scenes[sceneName] == null && this._isDestroyed !== true) {
-      throw new Error(
-        `Error occurred while deleting scene to node [${
-          this._id
-        }], scene [${sceneName}] is not exist.`
-      );
+    if (this._isDestroyed !== true) {
+      let scene = this._scenes[sceneName];
+      if (this._scenes[sceneName] == null) {
+        throw new Error(
+          `Error occurred while deleting scene to node [${
+            this._id
+          }], scene [${sceneName}] is not exist.`
+        );
+      }
+      scene.destroy();
+      delete this._scenes[sceneName];
+      return scene;
     }
-    scene.destroy();
-    delete this._scenes[sceneName];
-    return scene;
+    return null;
   }
 
   mountChild(id: string, node: Node) {
     if (this._isDestroyed !== true) {
       if (this._children[id] != null) {
         throw new Error(
-          `Error occurred while mounting node [${this._id}], child [${{
-            id
-          }}] already exist.`
+          `Error occurred while mounting node [${
+            this._id
+          }], child [${id}] already exist.`
         );
       }
       this._children[id] = node;
@@ -153,10 +162,7 @@ export default class Node {
   }
 
   hasChild(nodeId: string) {
-    if (this._isDestroyed !== true) {
-      return this._children[nodeId] != null;
-    }
-    return false;
+    return this._children[nodeId] != null;
   }
 
   getTransManager() {
@@ -169,15 +175,26 @@ export default class Node {
   getScenes() {
     return this._scenes;
   }
-  
+
+  getNode() {
+    return this._scenes;
+  }
+
+  getArenaStore() {
+    if (this._isDestroyed !== true) {
+      return this._arenaStore;
+    }
+    return null;
+  }
+
   getSceneEntity(sceneName: string) {
     if (this._isDestroyed !== true) {
       let scene = this._scenes[sceneName];
       if (scene == null) {
         throw new Error(
-          `Error occurred while getting scene, scene [${{
-            sceneName
-          }}] does not exist in node [${this._id}].`
+          `Error occurred while getting scene, scene [${sceneName}] does not exist in node [${
+            this._id
+          }].`
         );
       }
       return scene.getEntity();
