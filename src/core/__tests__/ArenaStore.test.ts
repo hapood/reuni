@@ -36,5 +36,5 @@ it("tests ArenaSotre add/delete Scene", () => {
   );
   expect(keys.length).toBe(1);
   node1.destroy();
-  expect(node1.getScene(sceneName2)).toBeNull;
+  expect(node1.findScene(sceneName2)).toBeNull;
 });

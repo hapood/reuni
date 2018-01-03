@@ -174,7 +174,7 @@ export default class Node {
     care: Record<string, Record<string, string[]>>,
     cb: (isValid: boolean) => void
   ) {
-    let observer = this._arenaStore.subscribe(this.getId() as string, care, cb);
+    let observer = this._arenaStore.subscribe(this._id, care, cb);
     return observer;
   }
 
@@ -188,5 +188,9 @@ export default class Node {
       );
     }
     return scene.getEntity();
+  }
+
+  findSceneEntity(sceneName: string, nodeName = "$") {
+    return this._arenaStore.getSceneEntity(this._id, nodeName, sceneName);
   }
 }

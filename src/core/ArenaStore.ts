@@ -94,7 +94,7 @@ export default class ArenaStore {
       })
     };
     pNode.ref.mountChild(newNodeId, newNode);
-    return new NodeAPI(newNode, this);
+    return new NodeAPI(newNode);
   }
 
   addScene(nodeId: string, sceneName: string, RawScene: new () => any) {

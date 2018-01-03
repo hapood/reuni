@@ -20,15 +20,25 @@ export function genId() {
   );
 }
 
-function createEntityHandler(state: any, arenaStore: ArenaStore) {
-  return {
+export function buildSceneEntity(
+  scene: Scene,
+  state: any,
+  stateDict: Record<string, boolean>,
+  arenaStore: ArenaStore
+): any {
+  let handler = {
     get: function(target: Scene, name: string | symbol) {
       throwErrorOfScene(target);
-      if (state[name] != null) {
+      if (stateDict[name] != null) {
         return state[name];
       }
-      if (taskCreators[name] != null) {
-        return taskCreators[name];
+      let taskDict = target.getTaskDict();
+      if (taskDict[name] != null) {
+        if (taskDict[name].type === PropertyType.TASK) {
+          return taskProxy.bind(null, name, taskDict[name].task, target);
+        } else {
+          return asyncTaskProxy.bind(null, name, taskDict[name].task, target);
+        }
       }
       throw new Error(
         `Error occurred while reading scene [${target.getName()}], unknown property [${name}].`
@@ -36,7 +46,7 @@ function createEntityHandler(state: any, arenaStore: ArenaStore) {
     },
     set: function(target: Scene, name: string, value: any) {
       throwErrorOfScene(target);
-      if (state[name] != null) {
+      if (stateDict[name] != null) {
         target.setValue(name, value);
         return true;
       }
@@ -45,14 +55,6 @@ function createEntityHandler(state: any, arenaStore: ArenaStore) {
       );
     }
   };
-}
-
-export function buildSceneEntity(
-  scene: Scene,
-  state: any | null | undefined,
-  arenaStore: ArenaStore
-): any {
-  let handler = createEntityHandler(state, arenaStore);
   let entity = new Proxy(scene, handler);
   return entity as any;
 }
@@ -62,7 +64,8 @@ function buildTaskEntity(scene: Scene, arenaStore: ArenaStore, t: Task) {
     get: function(target: Scene, name: string | symbol) {
       throwErrorOfScene(target);
       let state = target.getState();
-      if (state[name] != null) {
+      let stateDict = target.getStateDict();
+      if (stateDict[name] != null) {
         return state[name];
       }
       let taskDict = target.getTaskDict();
@@ -94,7 +97,8 @@ function buildTaskEntity(scene: Scene, arenaStore: ArenaStore, t: Task) {
     set: function(target: Scene, name: string, value: any) {
       throwErrorOfScene(target);
       let state = target.getState();
-      if (state[name] != null) {
+      let stateDict = target.getStateDict();
+      if (stateDict[name] != null) {
         if (t.isCanceled() !== true && t.isDone() !== true) {
           target.setValue(name, value);
           return true;

@@ -5,17 +5,15 @@ import ArenaStore from "../core/ArenaStore";
 
 export default class Node {
   private _nodeItem: NodeItem;
-  private _arenaStore: ArenaStore;
 
-  constructor(nodeItem: NodeItem, arenaStore: ArenaStore) {
+  constructor(nodeItem: NodeItem) {
     this._nodeItem = nodeItem;
-    this._arenaStore = arenaStore;
   }
 
   destroy() {
     if (this._nodeItem.isDestroyed() !== true) {
       let id = this._nodeItem.getId();
-      this._arenaStore.unmoutNode(id);
+      this._nodeItem.getArenaStore().unmoutNode(id);
       return id;
     }
     return null;
@@ -38,18 +36,18 @@ export default class Node {
 
   addScene(sceneName: string, RawScene: new () => any) {
     let nodeItem = this._nodeItem;
-    let scene = this._arenaStore.addScene(
-      nodeItem.getId(),
-      sceneName,
-      RawScene
-    );
+    let scene = this._nodeItem
+      .getArenaStore()
+      .addScene(nodeItem.getId(), sceneName, RawScene);
     return scene == null ? null : scene.getName();
   }
 
   deleteScene(sceneName: string) {
     let nodeItem = this._nodeItem;
     if (nodeItem.isDestroyed() !== true) {
-      return this._arenaStore.deleteScene(nodeItem.getId(), sceneName);
+      return this._nodeItem
+        .getArenaStore()
+        .deleteScene(nodeItem.getId(), sceneName);
     }
     return null;
   }
@@ -57,7 +55,9 @@ export default class Node {
   mountChild(id: string | undefined | null, nodeName: string) {
     let nodeItem = this._nodeItem;
     if (nodeItem.isDestroyed() !== true) {
-      return this._arenaStore.mountNode(id, nodeName, nodeItem.getId());
+      return this._nodeItem
+        .getArenaStore()
+        .mountNode(id, nodeName, nodeItem.getId());
     }
     return null;
   }
@@ -65,19 +65,17 @@ export default class Node {
   unmountChild(id: string) {
     let nodeItem = this._nodeItem;
     if (nodeItem.isDestroyed() !== true && nodeItem.hasChild(id)) {
-      return this._arenaStore.unmoutNode(id);
+      return this._nodeItem.getArenaStore().unmoutNode(id);
     }
     return null;
   }
 
-  getScene(sceneName: string, nodeName: string = "$") {
+  findScene(sceneName: string, nodeName: string = "$") {
     let nodeItem = this._nodeItem;
     if (nodeItem.isDestroyed() !== true) {
-      return this._arenaStore.getSceneEntity(
-        this.getId() as string,
-        nodeName,
-        sceneName
-      );
+      return this._nodeItem
+        .getArenaStore()
+        .getSceneEntity(this.getId(), nodeName, sceneName);
     }
     return null;
   }

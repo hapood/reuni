@@ -9,8 +9,9 @@ import ArenaStore from "src/core/ArenaStore";
 
 export default class Scene {
   private _name: string;
+  private _stateDict: Record<string, true>;
+  private _committedState: any;
   private _state: any;
-  private _nextState: any;
   private _isDestroyed: boolean;
   private _taskDict: TaskDict;
   private _node: Node;
@@ -18,23 +19,38 @@ export default class Scene {
   private _taskDesrDict: Record<string, Record<string, Task>>;
   private _isValid: boolean;
   private _observer: Observer;
+  private _sceneDict: Record<
+    string,
+    {
+      node: string;
+      scene: string;
+    }
+  >;
 
   constructor(sceneName: string, RawScene: new () => any, node: Node) {
     this._name = sceneName;
     let taskDict: TaskDict = {};
-    let stateDict: any = {};
+    let stateDict: Record<string, true> = {};
+    let state: any = {};
     let rawScene: any = new RawScene();
     let propertyDict = getCache(RawScene.prototype);
     let taskManager = node.getTaskManager();
     let taskDesrDict: Record<string, Record<string, Task>> = {};
     let tmpTask;
     let subscribeDict: Record<string, Record<string, string[]>> = { $: {} };
-
+    let sceneDict: Record<
+      string,
+      {
+        node: string;
+        scene: string;
+      }
+    > = {};
     Object.entries(propertyDict).forEach(([key, item]) => {
       switch (item.type) {
         case PropertyType.OBSERVABLE:
           taskDesrDict[key] = {};
-          stateDict[key] = rawScene[key];
+          stateDict[key] = true;
+          state[key] = rawScene[key];
           break;
         case PropertyType.TASK:
           tmpTask = rawScene[key];
@@ -52,17 +68,19 @@ export default class Scene {
             task: tmpTask
           };
         case PropertyType.SCENE:
-          let careScenes = subscribeDict[item.value.nodeName];
-          if (subscribeDict[item.value.nodeName] == null) {
+          let careScenes = subscribeDict[item.value.node];
+          if (subscribeDict[item.value.node] == null) {
             careScenes = {};
-            subscribeDict[item.value.nodeName] = careScenes;
+            subscribeDict[item.value.node] = careScenes;
           }
           careScenes[item.value.scene] = [];
+          sceneDict[key] = item.value;
           break;
       }
     });
-    this._state = stateDict;
-    this._nextState = Object.assign({}, stateDict);
+    this._stateDict = stateDict;
+    this._committedState = state;
+    this._state = Object.assign({}, state);
     this._taskDesrDict = taskDesrDict;
     this._taskDict = taskDict;
     this._isDestroyed = false;
@@ -70,8 +88,10 @@ export default class Scene {
     this._observer = node.subscribe(subscribeDict, isValid => {
       this.setIsValid(isValid);
     }) as Observer;
+    this._sceneDict = sceneDict;
     this._entity = buildSceneEntity(
       this,
+      state,
       stateDict,
       node.getArenaStore()
     );
@@ -88,6 +108,12 @@ export default class Scene {
 
   setIsValid(isValid: boolean) {
     this._isValid = isValid;
+    Object.entries(this._sceneDict).forEach(([sceneName, nodeName]) => {
+      this._state[sceneName] = this._node.findSceneEntity(
+        nodeName.scene,
+        nodeName.node
+      );
+    });
   }
 
   isValid() {
@@ -105,6 +131,10 @@ export default class Scene {
     }
     taskDescriptors[t.getId()] = t;
     return t;
+  }
+
+  getStateDict() {
+    return this._stateDict;
   }
 
   getNode() {
@@ -134,24 +164,18 @@ export default class Scene {
   }
 
   replaceState(state: any) {
-    if (this._isDestroyed !== true) {
-      this._node.addDirtyScenes(this._name);
-      this._nextState = state;
-    }
+    this._node.addDirtyScenes(this._name);
+    this._state = state;
   }
 
   setValue(key: string, value: string) {
-    if (this._isDestroyed !== true) {
-      this._node.addDirtyScenes(this._name);
-      this._nextState[key] = value;
-    }
+    this._node.addDirtyScenes(this._name);
+    this._state[key] = value;
   }
 
   setState(pState: any) {
-    if (this._isDestroyed !== true) {
-      this._node.addDirtyScenes(this._name);
-      Object.assign(this._nextState, pState);
-    }
+    this._node.addDirtyScenes(this._name);
+    Object.assign(this._state, pState);
   }
 
   getTaskDict() {
@@ -159,7 +183,7 @@ export default class Scene {
   }
 
   getState() {
-    return this._nextState;
+    return this._state;
   }
 
   getEntity() {
@@ -167,23 +191,22 @@ export default class Scene {
   }
 
   commit() {
-    if (this._isDestroyed !== true) {
-      this._entity = buildSceneEntity(
-        this,
-        this._nextState,
-        this._node.getArenaStore()
-      );
-      let oldKeys = Object.keys(this._state);
-      let newKeys = Object.keys(this._nextState);
-      let dirtyKeyDict: Record<string, boolean> = {};
-      oldKeys.concat(newKeys).forEach(key => {
-        if (this._state[key] !== this._nextState[key]) {
-          dirtyKeyDict[key] = true;
-        }
-      });
-      this._state = this._nextState;
-      this._nextState = Object.assign({}, this._nextState);
-      this._node.updateDirtyScene(this._name, dirtyKeyDict);
-    }
+    this._entity = buildSceneEntity(
+      this,
+      this._state,
+      this._stateDict,
+      this._node.getArenaStore()
+    );
+    let oldKeys = Object.keys(this._committedState);
+    let newKeys = Object.keys(this._state);
+    let dirtyKeyDict: Record<string, boolean> = {};
+    oldKeys.concat(newKeys).forEach(key => {
+      if (this._committedState[key] !== this._state[key]) {
+        dirtyKeyDict[key] = true;
+      }
+    });
+    this._committedState = this._state;
+    this._state = Object.assign({}, this._state);
+    this._node.updateDirtyScene(this._name, dirtyKeyDict);
   }
 }

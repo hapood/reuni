@@ -14,7 +14,7 @@ it("Scene works with subscribe", done => {
     },
     (isValid: boolean) => {
       let scene: MonoScene =
-        isValid == true ? node1.getScene(sceneName) : null;
+        isValid == true ? node1.findScene(sceneName) : null;
       switch (cbId) {
         case 0:
           expect(scene.cnt).toBe(10);
@@ -30,7 +30,7 @@ it("Scene works with subscribe", done => {
       }
     }
   );
-  let scene: MonoScene = node1.getScene(sceneName);
+  let scene: MonoScene = node1.findScene(sceneName);
   let t = scene.task();
   t.then(() => node1.deleteScene(sceneName));
 });
@@ -46,12 +46,12 @@ it("Scene works with cancel", done => {
       }
     },
     (isValid: boolean) => {
-      let scene: MonoScene = node1.getScene(sceneName);
+      let scene: MonoScene = node1.findScene(sceneName);
       expect(scene.cnt).toBe(2);
       done();
     }
   );
-  let scene: MonoScene = node1.getScene(sceneName);
+  let scene: MonoScene = node1.findScene(sceneName);
   let t = scene.cancelable();
   let task = getTaskDescriptor(t).cancel();
   scene.addAsync(2);
