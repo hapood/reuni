@@ -1,10 +1,10 @@
-import Node from "./Node";
+import NodeItem from "./Node";
 import { buildSceneEntity, taskProxy, asyncTaskProxy } from "./utils";
 import TaskManager from "./TaskManager";
 import Task from "../api/TaskDescriptor";
 import { TaskDict, Observer } from "./types";
 import PropertyType from "../api/PropertyType";
-import { getCache, cache } from "../api/decorator";
+import { getCache } from "../api/decorator";
 import ArenaStore from "src/core/ArenaStore";
 
 export default class Scene {
@@ -14,7 +14,7 @@ export default class Scene {
   private _state: any;
   private _isDestroyed: boolean;
   private _taskDict: TaskDict;
-  private _node: Node;
+  private _node: NodeItem;
   private _entity: any;
   private _taskDesrDict: Record<string, Record<string, Task>>;
   private _isValid: boolean;
@@ -27,7 +27,7 @@ export default class Scene {
     }
   >;
 
-  constructor(sceneName: string, RawScene: new () => any, node: Node) {
+  constructor(sceneName: string, RawScene: new () => any, node: NodeItem) {
     this._name = sceneName;
     let taskDict: TaskDict = {};
     let stateDict: Record<string, true> = {};
@@ -37,7 +37,9 @@ export default class Scene {
     let taskManager = node.getTaskManager();
     let taskDesrDict: Record<string, Record<string, Task>> = {};
     let tmpTask;
-    let subscribeDict: Record<string, Record<string, string[]>> = { $: {} };
+    let subscribeDict: Record<string, Record<string, string[]>> = {
+      $: { [sceneName]: [] }
+    };
     let sceneDict: Record<
       string,
       {
@@ -67,14 +69,16 @@ export default class Scene {
             type: PropertyType.ASYNC_TASK,
             task: tmpTask
           };
+          break;
         case PropertyType.SCENE:
-          let careScenes = subscribeDict[item.value.node];
-          if (subscribeDict[item.value.node] == null) {
+          let value: { scene: string; node: string } = item.value;
+          let careScenes = subscribeDict[value.node];
+          if (subscribeDict[value.node] == null) {
             careScenes = {};
-            subscribeDict[item.value.node] = careScenes;
+            subscribeDict[value.node] = careScenes;
           }
-          careScenes[item.value.scene] = [];
-          sceneDict[key] = item.value;
+          careScenes[value.scene] = [];
+          sceneDict[key] = value;
           break;
       }
     });
@@ -87,7 +91,7 @@ export default class Scene {
     this._node = node;
     this._observer = node.subscribe(subscribeDict, isValid => {
       this.setIsValid(isValid);
-    }) as Observer;
+    });
     this._sceneDict = sceneDict;
     this._entity = buildSceneEntity(
       this,
@@ -100,6 +104,10 @@ export default class Scene {
 
   getObserver() {
     return this._observer;
+  }
+
+  getSceneDict() {
+    return this._sceneDict;
   }
 
   isDestroy() {

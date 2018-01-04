@@ -1,5 +1,5 @@
 import PropertyType from "./PropertyType";
-import { getCache } from "./decorator";
+import { getProtoTypeCache } from "./decorator";
 
 const taskCacheItem = { type: PropertyType.TASK, value: null };
 const asyncTaskCacheItem = { type: PropertyType.ASYNC_TASK, value: null };
@@ -10,12 +10,12 @@ export type TaskDecorator = {
 };
 
 const task = function(target: any, propertyKey: string) {
-  let cache = getCache(target);
+  let cache = getProtoTypeCache(target);
   cache[propertyKey] = taskCacheItem;
 } as TaskDecorator;
 
 task.async = function(target: any, propertyKey: string) {
-  let cache = getCache(target);
+  let cache = getProtoTypeCache(target);
   cache[propertyKey] = asyncTaskCacheItem;
 };
 

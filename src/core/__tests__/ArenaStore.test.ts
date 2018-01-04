@@ -10,7 +10,7 @@ it("tests ArenaSotre mount/unmount node", () => {
   let arenaSotre = createArena();
   let node1 = arenaSotre.mountNode(null, "node1");
   expect(arenaSotre).toBeInstanceOf(ArenaStore);
-  let node1Child1 = node1.mountChild(null, "node1Child") as NodeAPI;
+  let node1Child1 = node1.mountChild(null, "node1Child");
   expect(node1Child1).toBeInstanceOf(NodeAPI);
   let node1Child2 = node1.mountChild("node1ChildKey", "node1Child") as NodeAPI;
   expect(node1Child2).toBeInstanceOf(NodeAPI);
@@ -32,7 +32,7 @@ it("tests ArenaSotre add/delete Scene", () => {
   expect(sceneName1).toBe("scene1");
   node1.deleteScene(sceneName1);
   let keys = Object.keys(
-    (arenaSotre.getNode(node1.getId() as string) as Node).getScenes()
+    (arenaSotre.getNode(node1.getId()) as Node).getScenes()
   );
   expect(keys.length).toBe(1);
   node1.destroy();

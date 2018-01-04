@@ -6,7 +6,7 @@ import Task from "../api/TaskDescriptor";
 import { tKey, asKey } from "../api/TaskDescriptor";
 import TaskStatus from "../api/TaskStatus";
 import ArenaStore from "src/core/ArenaStore";
-import Node from "./Node";
+import NodeItem from "./Node";
 import TaskCancelError from "../api/TaskCancelError";
 import SceneNotExistError from "../api/SceneNotExistError";
 import SceneNotAvailableError from "../api/SceneNotAvailableError";
@@ -39,6 +39,10 @@ export function buildSceneEntity(
         } else {
           return asyncTaskProxy.bind(null, name, taskDict[name].task, target);
         }
+      }
+      let sceneDict = target.getSceneDict();
+      if (sceneDict[name] != null) {
+        return target.getState()[name];
       }
       throw new Error(
         `Error occurred while reading scene [${target.getName()}], unknown property [${name}].`
@@ -83,6 +87,10 @@ function buildTaskEntity(scene: Scene, arenaStore: ArenaStore, t: Task) {
           );
         }
         return null;
+      }
+      let sceneDict = target.getSceneDict();
+      if (sceneDict[name] != null) {
+        return state[name];
       }
       if (name === tKey) {
         return t;
@@ -131,6 +139,20 @@ function taskRelayProxy(
   return null;
 }
 
+function asyncTaskRelayProxy(
+  f: () => void,
+  scene: Scene,
+  arenaStore: ArenaStore,
+  t: Task,
+  ...args: any[]
+) {
+  if (scene.isValid() !== false) {
+    let entity = buildTaskEntity(scene, arenaStore, t);
+    return f.apply(entity, args);
+  }
+  return null;
+}
+
 function throwErrorOfScene(scene: Scene) {
   if (scene.isDestroy() !== false) {
     throw new SceneNotExistError(scene);
@@ -151,10 +173,22 @@ export function taskProxy(
   let taskManager = arenaStore.getTaskManager();
   let t = startSceneTask(scene, taskName, taskManager, arenaStore);
   let entity = buildTaskEntity(scene, arenaStore, t);
-  let r = f.apply(entity, args);
-  taskManager.finishTask(t.getId());
-  arenaStore.commit();
-  return r;
+  let r;
+  try {
+    r = f.apply(entity, args);
+    taskManager.finishTask(t.getId());
+    arenaStore.commit();
+    return r;
+  } catch (e) {
+    if (e instanceof TaskCancelError) {
+      if (process.env.NODE_ENV !== "production") {
+        console.info(e);
+      }
+    } else {
+      throw e;
+    }
+  }
+  return null;
 }
 
 function startSceneTask(
@@ -166,6 +200,13 @@ function startSceneTask(
   let t = taskManager.startTask();
   scene.addTask(taskName, t);
   t.subscribe((tStatus: TaskStatus) => {
+    if (process.env.NODE_ENV !== "production") {
+      if (tStatus === TaskStatus.CANCELED) {
+        console.info(`Task [${taskName}] is canceled, taskId: ${t.getId()}.`);
+      } else {
+        console.info(`Task [${taskName}] is done, taskId: ${t.getId()}.`);
+      }
+    }
     if (tStatus === TaskStatus.CANCELED) {
       scene.deleteTask(taskName, t.getId());
       arenaStore.commit();
@@ -176,7 +217,7 @@ function startSceneTask(
 
 export function asyncTaskProxy(
   taskName: string,
-  f: () => void,
+  f: () => Promise<any>,
   scene: Scene,
   ...args: any[]
 ) {
@@ -185,13 +226,21 @@ export function asyncTaskProxy(
   let taskManager = arenaStore.getTaskManager();
   let t = startSceneTask(scene, taskName, taskManager, arenaStore);
   let entity = buildTaskEntity(scene, arenaStore, t);
-  let r = f.apply(entity, args);
+  let r = (f.apply(entity, args) as Promise<any>).catch((e: any) => {
+    if (e instanceof TaskCancelError) {
+      if (process.env.NODE_ENV !== "production") {
+        console.info(e);
+      }
+    } else {
+      throw e;
+    }
+  });
   r.then(() => {
     let tid = t.getId();
     taskManager.finishTask(tid);
     scene.deleteTask(taskName, tid);
     arenaStore.commit();
   });
-  r[tKey] = t;
+  (r as any)[tKey] = t;
   return r;
 }

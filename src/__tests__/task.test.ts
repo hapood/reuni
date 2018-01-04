@@ -10,18 +10,15 @@ it("Scene works with cancel", done => {
   node1.subscribe(
     {
       $: {
-        [monoScene]: ["cnt"],
-        [mixedScene]: ["cnt"]
+        [monoScene]: ["cnt"]
       }
     },
     (isValid: boolean) => {
-      let scene: MixedScene = node1.findScene(sceneName1);
+      let scene: MonoScene = node1.findScene(monoScene);
       expect(scene.cnt).toBe(2);
       done();
     }
   );
-  let scene: MixedScene = node1.findScene(sceneName1);
-  let t = scene.cancelable();
-  let task = getTaskDescriptor(t).cancel();
-  scene.addAsync(2);
+  let scene: MixedScene = node1.findScene(mixedScene);
+  let t = scene.callOtherScene();
 });

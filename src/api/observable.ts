@@ -1,10 +1,10 @@
 import PropertyType from "./PropertyType";
-import { getCache } from "./decorator";
+import { getProtoTypeCache } from "./decorator";
 
 const cacheItem = { type: PropertyType.OBSERVABLE, value: null };
 
 function observable(target: any, propertyKey: string) {
-  let cache = getCache(target);
+  let cache = getProtoTypeCache(target);
   cache[propertyKey] = cacheItem
 }
 

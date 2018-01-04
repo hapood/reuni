@@ -1,11 +1,11 @@
 import Scene from "./Scene";
-import Node from "./Node";
+import NodeItem from "./Node";
 import TaskStatus from "../api/TaskStatus";
 import PropertyType from "../api/PropertyType";
 
 export type NodeDictItem = {
   path: string[];
-  ref: Node;
+  ref: NodeItem;
   nameDict: Record<string, string>;
   name: string;
 };

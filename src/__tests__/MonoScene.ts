@@ -1,6 +1,6 @@
-import { observable, task } from "src";
+import { observable, task, delay } from "src";
 
-export default class MockScene {
+export default class MonoScene {
   @observable name = "test";
   @observable cnt = 0;
 
@@ -16,12 +16,8 @@ export default class MockScene {
 
   @task.async
   async addAsync(num: number) {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        this.cnt += num;
-        resolve();
-      }, 100);
-    });
+    await delay(100);
+    this.cnt += num;
   }
 
   @task.async
@@ -33,11 +29,7 @@ export default class MockScene {
 
   @task.async
   async cancelable() {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        this.cnt += 1;
-        resolve();
-      }, 0);
-    });
+    await delay(0);
+    this.cnt += 1;
   }
 }

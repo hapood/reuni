@@ -4,7 +4,7 @@ import MonoScene from "./MonoScene";
 it("Scene works with subscribe", done => {
   let arenaSotre = createArena();
   let node1 = arenaSotre.mountNode(null, "node1");
-  let sceneName = node1.addScene("sceneForTest", MonoScene) as string;
+  let sceneName = node1.addScene("monoScene", MonoScene) as string;
   let cbId = 0;
   node1.subscribe(
     {
@@ -38,7 +38,7 @@ it("Scene works with subscribe", done => {
 it("Scene works with cancel", done => {
   let arenaSotre = createArena();
   let node1 = arenaSotre.mountNode(null, "node1");
-  let sceneName = node1.addScene("sceneForTest", MonoScene) as string;
+  let sceneName = node1.addScene("MonoScene", MonoScene) as string;
   node1.subscribe(
     {
       $: {

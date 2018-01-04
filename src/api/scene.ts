@@ -1,9 +1,9 @@
 import PropertyType from "./PropertyType";
-import { getCache } from "./decorator";
+import { getProtoTypeCache } from "./decorator";
 
 function scene(sceneName: string, nodeName: string = "$") {
   return (target: any, propertyKey: string) => {
-    let cache = getCache(target);
+    let cache = getProtoTypeCache(target);
     cache[propertyKey] = {
       type: PropertyType.SCENE,
       value: {

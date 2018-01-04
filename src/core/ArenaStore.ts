@@ -3,7 +3,7 @@ import { genId } from "./utils";
 import Scene from "./Scene";
 import NodeAPI from "../api/Node";
 import TaskManager from "./TaskManager";
-import Node from "./Node";
+import NodeItem from "./Node";
 
 export default class ArenaStore {
   private _nodeDict: NodeDict;
@@ -16,7 +16,7 @@ export default class ArenaStore {
     let nodeId = genId();
     this._rootId = nodeId;
     let rootName = "$root";
-    let rootNodeItem = new Node(nodeId, rootName, this);
+    let rootNodeItem = new NodeItem(nodeId, rootName, this);
     this._nodeDict = {
       [nodeId]: {
         path: [nodeId],
@@ -82,7 +82,7 @@ export default class ArenaStore {
         'Error occurred while mounting node, name of node can not start with "$".'
       );
     }
-    let newNode = new Node(newNodeId, nodeName, this, pNode.ref);
+    let newNode = new NodeItem(newNodeId, nodeName, this, pNode.ref);
     nodePath = pNode.path.concat(newNodeId);
     this._nodeDict[newNodeId] = {
       path: nodePath,
@@ -126,7 +126,7 @@ export default class ArenaStore {
         let careNodeIdList = Object.keys(observer.care);
         for (let i = 0; i < careNodeIdList.length; i++) {
           let nodeId = careNodeIdList[i];
-          let node = this.getNode(nodeId) as Node;
+          let node = this.getNode(nodeId) as NodeItem;
           if (node.hasScenes(Object.keys(observer.care[nodeId])) !== true) {
             isCb = false;
             break;
@@ -317,6 +317,6 @@ export default class ArenaStore {
   }
 }
 
-export function createArena(stateTree?: Node) {
+export function createArena(stateTree?: NodeItem) {
   return new ArenaStore();
 }

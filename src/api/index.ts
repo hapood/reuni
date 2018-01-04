@@ -4,3 +4,4 @@ export { default as task } from "./task";
 export { default as scene } from "./scene";
 export { default as TaskDescriptor } from "./TaskDescriptor";
 export { default as getTaskDescriptor } from "./getTaskDescriptor";
+export { default as delay } from "./delay";

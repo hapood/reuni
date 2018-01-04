@@ -3,11 +3,11 @@ import TaskManager from "../core/TaskManager";
 import ArenaStore from "./ArenaStore";
 import { Observer } from "./types";
 
-export default class Node {
+export default class NodeItem {
   private _id: string;
   private _name: string;
-  private _parent: Node | undefined | null;
-  private _children: Record<string, Node>;
+  private _parent: NodeItem | undefined | null;
+  private _children: Record<string, NodeItem>;
   private _scenes: Record<string, Scene>;
   private _dirtyScenes: Record<string, boolean>;
   private _dirtySceneKeys: Record<string, Record<string, boolean>>;
@@ -15,7 +15,7 @@ export default class Node {
   private _isDestroyed: boolean;
   private _arenaStore: ArenaStore;
 
-  constructor(id: string, name: string, arenaStore: ArenaStore, parent?: Node) {
+  constructor(id: string, name: string, arenaStore: ArenaStore, parent?: NodeItem) {
     this._id = id;
     this._name = name;
     this._parent = parent;
@@ -41,10 +41,10 @@ export default class Node {
   }
 
   hasScenes(sceneNames: string[]) {
-    let nullSceneName = sceneNames.findIndex(
+    let nullIndex = sceneNames.findIndex(
       sceneName => this._scenes[sceneName] == null
     );
-    return nullSceneName == null ? true : false;
+    return nullIndex < 0 ? true : false;
   }
 
   destroy(): null | string[] {
@@ -125,7 +125,7 @@ export default class Node {
     return scene;
   }
 
-  mountChild(id: string, node: Node) {
+  mountChild(id: string, node: NodeItem) {
     if (this._children[id] != null) {
       throw new Error(
         `Error occurred while mounting node [${

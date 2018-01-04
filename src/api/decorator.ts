@@ -1,12 +1,16 @@
-import { ScenePropertyCache } from "./types";
 import PropertyType from "./PropertyType";
 
-export const cache: ScenePropertyCache = { ref: null, dict: {} };
+export const decoratorCachekey = Symbol("decoratorCache");
 
 export function getCache(target: any) {
-  if (cache.ref !== target) {
-    cache.ref = target;
-    cache.dict = {};
+  return target[decoratorCachekey];
+}
+
+export function getProtoTypeCache(target: any) {
+  let cache = target[decoratorCachekey];
+  if (cache == null) {
+    cache = {};
+    target[decoratorCachekey] = cache;
   }
-  return cache.dict;
+  return cache;
 }

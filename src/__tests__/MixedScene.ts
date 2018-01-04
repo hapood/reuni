@@ -1,5 +1,11 @@
 import { observable, task, scene } from "src";
+import MonoScene from "./MonoScene";
 
-export default class MockScene {
-  @scene() name = "test";
+export default class MixedScene {
+  @scene("monoScene") monoScene: MonoScene;
+
+  @task
+  callOtherScene() {
+    this.monoScene.add(2);
+  }
 }

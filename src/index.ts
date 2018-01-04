@@ -5,5 +5,6 @@ export {
   task,
   TaskDescriptor,
   getTaskDescriptor,
-  scene
+  scene,
+  delay
 } from "./api";
