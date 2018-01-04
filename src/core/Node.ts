@@ -15,7 +15,12 @@ export default class NodeItem {
   private _isDestroyed: boolean;
   private _arenaStore: ArenaStore;
 
-  constructor(id: string, name: string, arenaStore: ArenaStore, parent?: NodeItem) {
+  constructor(
+    id: string,
+    name: string,
+    arenaStore: ArenaStore,
+    parent?: NodeItem
+  ) {
     this._id = id;
     this._name = name;
     this._parent = parent;

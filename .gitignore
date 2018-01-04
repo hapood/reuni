@@ -3,4 +3,7 @@ coverage/
 build/
 example/build/
 tmp/
+.build.cjs/
+.build.es/
+lib/
 *.log

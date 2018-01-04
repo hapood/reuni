@@ -1,14 +1,16 @@
 {
   "name": "arena",
-  "version": "0.0.1-alpha",
+  "version": "0.1.0-alpha",
   "description": "Dynamic state container for JavaScript apps",
   "scripts": {
     "prettier":
-      "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\""
+      "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\"",
+    "build": "node scripts/build.js",
+    "test": "yarn jest"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hapood/redux-arena.git"
+    "url": "git+https://github.com/hapood/arena.git"
   },
   "keywords": ["arena", "immutable", "observable", "react", "reactjs"],
   "author": "Hapood Wang",
@@ -17,14 +19,14 @@
     "url": "https://github.com/hapood/arena/issues"
   },
   "homepage": "https://github.com/hapood/arena#readme",
-  "peerDependencies": {
-    "react": ">=16"
-  },
   "dependencies": {},
   "devDependencies": {
     "@types/jest": "^22.0.0",
     "jest": "^22.0.4",
     "prettier": "^1.9.2",
+    "rollup": "^0.53.3",
+    "rollup-plugin-filesize": "^1.5.0",
+    "rollup-plugin-node-resolve": "^3.0.0",
     "ts-jest": "^22.0.0",
     "typescript": "^2.6.2"
   },
