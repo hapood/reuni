@@ -4,12 +4,15 @@ const path = require("path");
 const ts = require("typescript");
 const exec = require("child_process").execSync;
 
+const files = ["README.md", "LICENSE"];
+const buildFolder = "build";
+
 // make sure we're in the right folder
 process.chdir(path.resolve(__dirname, ".."));
 
 const binFolder = path.resolve("node_modules/.bin/");
 
-fs.removeSync("lib");
+fs.removeSync(buildFolder);
 fs.removeSync(".build.cjs");
 fs.removeSync(".build.es");
 
@@ -40,7 +43,7 @@ function runTypeScriptBuild(outDir, target, declarations) {
   options.module = ts.ModuleKind.ES2015;
   options.importHelpers = true;
   options.noEmitHelpers = true;
-  if (declarations) options.declarationDir = path.resolve(".", "lib");
+  if (declarations) options.declarationDir = path.resolve(".", buildFolder);
 
   const rootFile = path.resolve("src", "index.ts");
   const host = ts.createCompilerHost(options, true);
@@ -85,8 +88,17 @@ function generateBundledModule(inputFile, outputFile, format) {
 function generateMinified() {
   console.log("Generating index.min.js");
   exec(
-    `${binFolder}/uglifyjs -m sort,toplevel -c warnings=false --source-map lib/index.min.js.map -o lib/index.min.js lib/index.js`
+    `${binFolder}/uglifyjs -m sort,toplevel -c warnings=false --source-map ${buildFolder}/index.min.js.map -o ${buildFolder}/index.min.js ${buildFolder}/index.js`
   );
+}
+
+function copyFile(file) {
+  return new Promise(resolve => {
+    fs.copy(file, path.resolve(buildFolder, path.basename(file)), err => {
+      if (err) throw err;
+      resolve();
+    });
+  }).then(() => console.log(`Copied ${file} to ${buildFolder}`));
 }
 
 function build() {
@@ -95,18 +107,76 @@ function build() {
   return Promise.all([
     generateBundledModule(
       path.resolve(".build.cjs", "index.js"),
-      path.resolve("lib", "index.js"),
+      path.resolve(buildFolder, "index.js"),
       "cjs"
     ),
 
     generateBundledModule(
       path.resolve(".build.es", "index.js"),
-      path.resolve("lib", "index.module.js"),
+      path.resolve(buildFolder, "index.module.js"),
       "es"
     )
   ]).then(() => {
     generateMinified();
+    Promise.all(files.map(file => copyFile(file))).then(() =>
+      createPackageFile()
+    );
   });
+}
+
+function createPackageFile() {
+  return new Promise(resolve => {
+    fs.readFile(path.resolve("package.json"), "utf8", (err, data) => {
+      if (err) {
+        throw err;
+      }
+      resolve(data);
+    });
+  })
+    .then(data => JSON.parse(data))
+    .then(packageData => {
+      const {
+        name,
+        author,
+        version,
+        description,
+        keywords,
+        repository,
+        license,
+        bugs,
+        homepage,
+        peerDependencies,
+        dependencies
+      } = packageData;
+
+      const minimalPackage = {
+        name,
+        author,
+        version,
+        description,
+        main: "index.js",
+        module: "index.module.js",
+        "jsnext:main": "index.module.js",
+        typings: "index.d.ts",
+        keywords,
+        repository,
+        license,
+        bugs,
+        homepage,
+        peerDependencies,
+        dependencies
+      };
+
+      return new Promise(resolve => {
+        const buildPath = path.resolve(`${buildFolder}/package.json`);
+        const data = JSON.stringify(minimalPackage, null, 2);
+        fs.writeFile(buildPath, data, err => {
+          if (err) throw err;
+          console.log(`Created package.json in ${buildPath}`);
+          resolve();
+        });
+      });
+    });
 }
 
 build().catch(e => {
