@@ -3,16 +3,21 @@
   "version": "0.1.0-beta",
   "description": "Dynamic state container for JavaScript apps",
   "scripts": {
-    "prettier":
-      "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\"",
+    "prettier": "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\"",
     "build": "node scripts/build.js",
-    "test": "yarn jest"
+    "test": "yarn jest --coverage"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hapood/reuni.git"
   },
-  "keywords": ["reuni", "immutable", "observable", "react", "reactjs"],
+  "keywords": [
+    "reuni",
+    "immutable",
+    "observable",
+    "react",
+    "reactjs"
+  ],
   "author": "Hapood Wang",
   "license": "Apache-2.0",
   "bugs": {
@@ -31,11 +36,17 @@
     "typescript": "^2.6.2"
   },
   "jest": {
-    "moduleFileExtensions": ["ts", "tsx", "js"],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
     "transform": {
       "^.+\\.ts$": "ts-jest"
     },
-    "testMatch": ["**/__tests__/*.test.(ts|js)"],
+    "testMatch": [
+      "**/__tests__/*.test.(ts|js)"
+    ],
     "moduleNameMapper": {
       "^src$": "<rootDir>/src/index.ts"
     },
