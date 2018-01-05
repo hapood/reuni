@@ -9,8 +9,7 @@ jobs:
           keys: 
           - dependency-cache-{{ checksum "package.json" }}
           - v1-dependencies-
-      - run:
-          name: yarn install
+      - run: yarn install
       - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
