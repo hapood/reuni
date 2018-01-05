@@ -1,6 +1,6 @@
 {
-  "name": "arena",
-  "version": "0.1.0-alpha",
+  "name": "reuni",
+  "version": "0.1.0-beta",
   "description": "Dynamic state container for JavaScript apps",
   "scripts": {
     "prettier":
@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hapood/arena.git"
+    "url": "git+https://github.com/hapood/reuni.git"
   },
-  "keywords": ["arena", "immutable", "observable", "react", "reactjs"],
+  "keywords": ["reuni", "immutable", "observable", "react", "reactjs"],
   "author": "Hapood Wang",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/hapood/arena/issues"
+    "url": "https://github.com/hapood/reuni/issues"
   },
-  "homepage": "https://github.com/hapood/arena#readme",
+  "homepage": "https://github.com/hapood/reuni#readme",
   "dependencies": {},
   "devDependencies": {
     "@types/jest": "^22.0.0",
@@ -38,6 +38,10 @@
     "testMatch": ["**/__tests__/*.test.(ts|js)"],
     "moduleNameMapper": {
       "^src$": "<rootDir>/src/index.ts"
-    }
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{js,ts}",
+      "!src/**/__tests__/**"
+    ]
   }
 }

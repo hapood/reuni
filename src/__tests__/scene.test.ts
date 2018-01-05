@@ -1,27 +1,27 @@
-import { createArena, Node, getTaskDescriptor } from "src";
-import MonoScene from "./MonoScene";
+import { createReuni, Node, getTaskDescriptor } from "src";
+import MonoStore from "./MonoStore";
 
-it("Scene works with subscribe", done => {
-  let arenaSotre = createArena();
+it("Store works with subscribe", done => {
+  let arenaSotre = createReuni();
   let node1 = arenaSotre.mountNode(null, "node1");
-  let sceneName = node1.addScene("monoScene", MonoScene) as string;
+  let storeName = node1.addStore("monoStore", MonoStore) as string;
   let cbId = 0;
   node1.subscribe(
     {
       $: {
-        [sceneName]: ["cnt"]
+        [storeName]: ["cnt"]
       }
     },
     (isValid: boolean) => {
-      let scene: MonoScene =
-        isValid == true ? node1.findScene(sceneName) : null;
+      let store: MonoStore =
+        isValid == true ? node1.findStore(storeName) : null;
       switch (cbId) {
         case 0:
-          expect(scene.cnt).toBe(10);
+          expect(store.cnt).toBe(10);
           cbId++;
           break;
         case 1:
-          expect(scene.cnt).toBe(30);
+          expect(store.cnt).toBe(30);
           cbId++;
           break;
         case 2:
@@ -30,29 +30,29 @@ it("Scene works with subscribe", done => {
       }
     }
   );
-  let scene: MonoScene = node1.findScene(sceneName);
-  let t = scene.task();
-  t.then(() => node1.deleteScene(sceneName));
+  let store: MonoStore = node1.findStore(storeName);
+  let t = store.task();
+  t.then(() => node1.deleteStore(storeName));
 });
 
-it("Scene works with cancel", done => {
-  let arenaSotre = createArena();
+it("Store works with cancel", done => {
+  let arenaSotre = createReuni();
   let node1 = arenaSotre.mountNode(null, "node1");
-  let sceneName = node1.addScene("MonoScene", MonoScene) as string;
+  let storeName = node1.addStore("MonoStore", MonoStore) as string;
   node1.subscribe(
     {
       $: {
-        [sceneName]: ["cnt"]
+        [storeName]: ["cnt"]
       }
     },
     (isValid: boolean) => {
-      let scene: MonoScene = node1.findScene(sceneName);
-      expect(scene.cnt).toBe(2);
+      let store: MonoStore = node1.findStore(storeName);
+      expect(store.cnt).toBe(2);
       done();
     }
   );
-  let scene: MonoScene = node1.findScene(sceneName);
-  let t = scene.cancelable();
+  let store: MonoStore = node1.findStore(storeName);
+  let t = store.cancelable();
   let task = getTaskDescriptor(t).cancel();
-  scene.addAsync(2);
+  store.addAsync(2);
 });

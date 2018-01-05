@@ -1,4 +1,4 @@
-import Scene from "./Scene";
+import Store from "./Store";
 import NodeItem from "./Node";
 import TaskStatus from "../api/TaskStatus";
 import PropertyType from "../api/PropertyType";
@@ -29,7 +29,7 @@ export type TaskItem = {
 export type NodeItem = {
   id: string;
   name: string;
-  scenes: Record<string, Scene>;
+  stores: Record<string, Store>;
   parent: NodeItem | null | undefined;
   children: Record<string, NodeItem>;
   isDestroyed: boolean;

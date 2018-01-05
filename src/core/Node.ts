@@ -1,6 +1,6 @@
-import Scene from "./Scene";
+import Store from "./Store";
 import TaskManager from "../core/TaskManager";
-import ArenaStore from "./ArenaStore";
+import Reuni from "./Reuni";
 import { Observer } from "./types";
 
 export default class NodeItem {
@@ -8,27 +8,27 @@ export default class NodeItem {
   private _name: string;
   private _parent: NodeItem | undefined | null;
   private _children: Record<string, NodeItem>;
-  private _scenes: Record<string, Scene>;
-  private _dirtyScenes: Record<string, boolean>;
-  private _dirtySceneKeys: Record<string, Record<string, boolean>>;
+  private _stores: Record<string, Store>;
+  private _dirtyStores: Record<string, boolean>;
+  private _dirtyStoreKeys: Record<string, Record<string, boolean>>;
   private _dirtyNodes: Record<string, boolean>;
   private _isDestroyed: boolean;
-  private _arenaStore: ArenaStore;
+  private _arenaStore: Reuni;
 
   constructor(
     id: string,
     name: string,
-    arenaStore: ArenaStore,
+    arenaStore: Reuni,
     parent?: NodeItem
   ) {
     this._id = id;
     this._name = name;
     this._parent = parent;
-    this._scenes = {};
+    this._stores = {};
     this._children = {};
     this._dirtyNodes = {};
-    this._dirtyScenes = {};
-    this._dirtySceneKeys = {};
+    this._dirtyStores = {};
+    this._dirtyStoreKeys = {};
     this._isDestroyed = false;
     this._arenaStore = arenaStore;
   }
@@ -45,18 +45,18 @@ export default class NodeItem {
     return this._parent;
   }
 
-  hasScenes(sceneNames: string[]) {
-    let nullIndex = sceneNames.findIndex(
-      sceneName => this._scenes[sceneName] == null
+  hasStores(storeNames: string[]) {
+    let nullIndex = storeNames.findIndex(
+      storeName => this._stores[storeName] == null
     );
     return nullIndex < 0 ? true : false;
   }
 
   destroy(): null | string[] {
     let observers: Observer[] = [];
-    Object.values(this._scenes).forEach(scene => {
-      observers.push(scene.getObserver());
-      scene.destroy();
+    Object.values(this._stores).forEach(store => {
+      observers.push(store.getObserver());
+      store.destroy();
     });
     let nodeKeys = Object.keys(this._children);
     let keys = Object.entries(this._children)
@@ -65,7 +65,7 @@ export default class NodeItem {
         (prev, cur) => (cur == null ? prev : (prev as string[]).concat(cur)),
         nodeKeys
       );
-    this._scenes = {};
+    this._stores = {};
     this._children = {};
     this._isDestroyed = true;
     return keys;
@@ -75,18 +75,18 @@ export default class NodeItem {
     Object.keys(this._dirtyNodes).forEach(nodeId =>
       this._children[nodeId].commit()
     );
-    Object.keys(this._dirtyScenes).forEach(sceneName =>
-      this._scenes[sceneName].commit()
+    Object.keys(this._dirtyStores).forEach(storeName =>
+      this._stores[storeName].commit()
     );
-    let dirtyScenes = this._dirtySceneKeys;
+    let dirtyStores = this._dirtyStoreKeys;
     this._dirtyNodes = {};
-    this._dirtyScenes = {};
-    this._dirtySceneKeys = {};
-    this._arenaStore.updateDirtyNode(this._id, dirtyScenes);
+    this._dirtyStores = {};
+    this._dirtyStoreKeys = {};
+    this._arenaStore.updateDirtyNode(this._id, dirtyStores);
   }
 
-  addDirtyScenes(sceneName: string) {
-    this._dirtyScenes[sceneName] = true;
+  addDirtyStores(storeName: string) {
+    this._dirtyStores[storeName] = true;
     if (this._parent != null) {
       this._parent.addDirtyNode(this._id);
     }
@@ -96,38 +96,38 @@ export default class NodeItem {
     this._dirtyNodes[nodeId] = true;
   }
 
-  updateDirtyScene(sceneName: string, keyList: Record<string, boolean>) {
-    this._dirtySceneKeys[sceneName] = keyList;
+  updateDirtyStore(storeName: string, keyList: Record<string, boolean>) {
+    this._dirtyStoreKeys[storeName] = keyList;
   }
 
-  addScene<S extends Record<string, {}>, A>(
-    sceneName: string,
-    RawScene: new () => any
+  addStore<S extends Record<string, {}>, A>(
+    storeName: string,
+    RawStore: new () => any
   ) {
-    if (this._scenes[sceneName] != null) {
+    if (this._stores[storeName] != null) {
       throw new Error(
-        `Error occurred while adding scene to node [${
+        `Error occurred while adding store to node [${
           this._id
-        }], scene [${sceneName}] already exist.`
+        }], store [${storeName}] already exist.`
       );
     }
-    let scene = new Scene(sceneName, RawScene, this);
-    this._scenes[sceneName] = scene;
-    return scene;
+    let store = new Store(storeName, RawStore, this);
+    this._stores[storeName] = store;
+    return store;
   }
 
-  deleteScene(sceneName: string) {
-    let scene = this._scenes[sceneName];
-    if (this._scenes[sceneName] == null) {
+  deleteStore(storeName: string) {
+    let store = this._stores[storeName];
+    if (this._stores[storeName] == null) {
       throw new Error(
-        `Error occurred while deleting scene to node [${
+        `Error occurred while deleting store to node [${
           this._id
-        }], scene [${sceneName}] is not exist.`
+        }], store [${storeName}] is not exist.`
       );
     }
-    scene.destroy();
-    delete this._scenes[sceneName];
-    return scene;
+    store.destroy();
+    delete this._stores[storeName];
+    return store;
   }
 
   mountChild(id: string, node: NodeItem) {
@@ -163,12 +163,12 @@ export default class NodeItem {
     return this._arenaStore.getTaskManager();
   }
 
-  getScenes() {
-    return this._scenes;
+  getStores() {
+    return this._stores;
   }
 
   getNode() {
-    return this._scenes;
+    return this._stores;
   }
 
   getArenaStore() {
@@ -183,19 +183,19 @@ export default class NodeItem {
     return observer;
   }
 
-  getSceneEntity(sceneName: string) {
-    let scene = this._scenes[sceneName];
-    if (scene == null) {
+  getStoreEntity(storeName: string) {
+    let store = this._stores[storeName];
+    if (store == null) {
       throw new Error(
-        `Error occurred while getting scene, scene [${sceneName}] does not exist in node [${
+        `Error occurred while getting store, store [${storeName}] does not exist in node [${
           this._id
         }].`
       );
     }
-    return scene.getEntity();
+    return store.getEntity();
   }
 
-  findSceneEntity(sceneName: string, nodeName = "$") {
-    return this._arenaStore.getSceneEntity(this._id, nodeName, sceneName);
+  findStoreEntity(storeName: string, nodeName = "$") {
+    return this._arenaStore.getStoreEntity(this._id, nodeName, storeName);
   }
 }

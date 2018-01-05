@@ -1,7 +1,7 @@
-import Scene from "../core/Scene";
+import Store from "../core/Store";
 import TaskManager from "../core/TaskManager";
 import NodeItem from "../core/Node";
-import ArenaStore from "../core/ArenaStore";
+import Reuni from "../core/Reuni";
 
 export default class Node {
   private _nodeItem: NodeItem;
@@ -34,20 +34,20 @@ export default class Node {
     return this._nodeItem.subscribe(care, cb);
   }
 
-  addScene(sceneName: string, RawScene: new () => any) {
+  addStore(storeName: string, RawStore: new () => any) {
     let nodeItem = this._nodeItem;
-    let scene = this._nodeItem
+    let store = this._nodeItem
       .getArenaStore()
-      .addScene(nodeItem.getId(), sceneName, RawScene);
-    return scene == null ? null : scene.getName();
+      .addStore(nodeItem.getId(), storeName, RawStore);
+    return store == null ? null : store.getName();
   }
 
-  deleteScene(sceneName: string) {
+  deleteStore(storeName: string) {
     let nodeItem = this._nodeItem;
     if (nodeItem.isDestroyed() !== true) {
       return this._nodeItem
         .getArenaStore()
-        .deleteScene(nodeItem.getId(), sceneName);
+        .deleteStore(nodeItem.getId(), storeName);
     }
     return null;
   }
@@ -70,12 +70,12 @@ export default class Node {
     return null;
   }
 
-  findScene(sceneName: string, nodeName: string = "$") {
+  findStore(storeName: string, nodeName: string = "$") {
     let nodeItem = this._nodeItem;
     if (nodeItem.isDestroyed() !== true) {
       return this._nodeItem
         .getArenaStore()
-        .getSceneEntity(this.getId(), nodeName, sceneName);
+        .getStoreEntity(this.getId(), nodeName, storeName);
     }
     return null;
   }

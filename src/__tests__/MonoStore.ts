@@ -1,6 +1,6 @@
 import { observable, task, delay } from "src";
 
-export default class MonoScene {
+export default class MonoStore {
   @observable name = "test";
   @observable cnt = 0;
 

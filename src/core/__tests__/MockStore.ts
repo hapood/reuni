@@ -1,6 +1,6 @@
 import { observable, task } from "src";
 
-export default class MockScene {
+export default class MockStore {
   @observable observable = "test";
 
   @task

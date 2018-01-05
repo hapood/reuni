@@ -1,13 +1,13 @@
 import NodeItem from "./Node";
-import { buildSceneEntity, taskProxy, asyncTaskProxy } from "./utils";
+import { buildStoreEntity, taskProxy, asyncTaskProxy } from "./utils";
 import TaskManager from "./TaskManager";
 import Task from "../api/TaskDescriptor";
 import { TaskDict, Observer } from "./types";
 import PropertyType from "../api/PropertyType";
 import { getCache } from "../api/decorator";
-import ArenaStore from "src/core/ArenaStore";
+import Reuni from "src/core/Reuni";
 
-export default class Scene {
+export default class Store {
   private _name: string;
   private _stateDict: Record<string, true>;
   private _committedState: any;
@@ -19,32 +19,32 @@ export default class Scene {
   private _taskDesrDict: Record<string, Record<string, Task>>;
   private _isValid: boolean;
   private _observer: Observer;
-  private _sceneDict: Record<
+  private _storeDict: Record<
     string,
     {
       node: string;
-      scene: string;
+      store: string;
     }
   >;
 
-  constructor(sceneName: string, RawScene: new () => any, node: NodeItem) {
-    this._name = sceneName;
+  constructor(storeName: string, RawStore: new () => any, node: NodeItem) {
+    this._name = storeName;
     let taskDict: TaskDict = {};
     let stateDict: Record<string, true> = {};
     let state: any = {};
-    let rawScene: any = new RawScene();
-    let propertyDict = getCache(RawScene.prototype);
+    let rawStore: any = new RawStore();
+    let propertyDict = getCache(RawStore.prototype);
     let taskManager = node.getTaskManager();
     let taskDesrDict: Record<string, Record<string, Task>> = {};
     let tmpTask;
     let subscribeDict: Record<string, Record<string, string[]>> = {
-      $: { [sceneName]: [] }
+      $: { [storeName]: [] }
     };
-    let sceneDict: Record<
+    let storeDict: Record<
       string,
       {
         node: string;
-        scene: string;
+        store: string;
       }
     > = {};
     Object.entries(propertyDict).forEach(([key, item]) => {
@@ -52,10 +52,10 @@ export default class Scene {
         case PropertyType.OBSERVABLE:
           taskDesrDict[key] = {};
           stateDict[key] = true;
-          state[key] = rawScene[key];
+          state[key] = rawStore[key];
           break;
         case PropertyType.TASK:
-          tmpTask = rawScene[key];
+          tmpTask = rawStore[key];
           taskDesrDict[key] = {};
           taskDict[key] = {
             type: PropertyType.TASK,
@@ -63,7 +63,7 @@ export default class Scene {
           };
           break;
         case PropertyType.ASYNC_TASK:
-          tmpTask = rawScene[key];
+          tmpTask = rawStore[key];
           taskDesrDict[key] = {};
           taskDict[key] = {
             type: PropertyType.ASYNC_TASK,
@@ -71,14 +71,14 @@ export default class Scene {
           };
           break;
         case PropertyType.SCENE:
-          let value: { scene: string; node: string } = item.value;
-          let careScenes = subscribeDict[value.node];
+          let value: { store: string; node: string } = item.value;
+          let careStores = subscribeDict[value.node];
           if (subscribeDict[value.node] == null) {
-            careScenes = {};
-            subscribeDict[value.node] = careScenes;
+            careStores = {};
+            subscribeDict[value.node] = careStores;
           }
-          careScenes[value.scene] = [];
-          sceneDict[key] = value;
+          careStores[value.store] = [];
+          storeDict[key] = value;
           break;
       }
     });
@@ -92,8 +92,8 @@ export default class Scene {
     this._observer = node.subscribe(subscribeDict, isValid => {
       this.setIsValid(isValid);
     });
-    this._sceneDict = sceneDict;
-    this._entity = buildSceneEntity(
+    this._storeDict = storeDict;
+    this._entity = buildStoreEntity(
       this,
       state,
       stateDict,
@@ -106,8 +106,8 @@ export default class Scene {
     return this._observer;
   }
 
-  getSceneDict() {
-    return this._sceneDict;
+  getStoreDict() {
+    return this._storeDict;
   }
 
   isDestroy() {
@@ -116,9 +116,9 @@ export default class Scene {
 
   setIsValid(isValid: boolean) {
     this._isValid = isValid;
-    Object.entries(this._sceneDict).forEach(([sceneName, nodeName]) => {
-      this._state[sceneName] = this._node.findSceneEntity(
-        nodeName.scene,
+    Object.entries(this._storeDict).forEach(([storeName, nodeName]) => {
+      this._state[storeName] = this._node.findStoreEntity(
+        nodeName.store,
         nodeName.node
       );
     });
@@ -132,7 +132,7 @@ export default class Scene {
     let taskDescriptors = this._taskDesrDict[taskName];
     if (taskDescriptors == null) {
       throw new Error(
-        `Error occurred while adding task to scene [${
+        `Error occurred while adding task to store [${
           this._name
         }], task name [${taskName}] does not exist.`
       );
@@ -153,7 +153,7 @@ export default class Scene {
     let taskDescriptors = this._taskDesrDict[taskName];
     if (taskDescriptors == null) {
       throw new Error(
-        `Error occurred while adding task to scene [${
+        `Error occurred while adding task to store [${
           this._name
         }], task name [${taskName}] does not exist.`
       );
@@ -172,17 +172,17 @@ export default class Scene {
   }
 
   replaceState(state: any) {
-    this._node.addDirtyScenes(this._name);
+    this._node.addDirtyStores(this._name);
     this._state = state;
   }
 
   setValue(key: string, value: string) {
-    this._node.addDirtyScenes(this._name);
+    this._node.addDirtyStores(this._name);
     this._state[key] = value;
   }
 
   setState(pState: any) {
-    this._node.addDirtyScenes(this._name);
+    this._node.addDirtyStores(this._name);
     Object.assign(this._state, pState);
   }
 
@@ -199,7 +199,7 @@ export default class Scene {
   }
 
   commit() {
-    this._entity = buildSceneEntity(
+    this._entity = buildStoreEntity(
       this,
       this._state,
       this._stateDict,
@@ -215,6 +215,6 @@ export default class Scene {
     });
     this._committedState = this._state;
     this._state = Object.assign({}, this._state);
-    this._node.updateDirtyScene(this._name, dirtyKeyDict);
+    this._node.updateDirtyStore(this._name, dirtyKeyDict);
   }
 }

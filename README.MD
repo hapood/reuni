@@ -1,3 +1,3 @@
-# redux-arena
+# reuni
 
 Dynamic state container for JavaScript apps

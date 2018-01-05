@@ -1,6 +1,5 @@
 node_modules/
 coverage/
-build/
 example/build/
 tmp/
 .build.cjs/

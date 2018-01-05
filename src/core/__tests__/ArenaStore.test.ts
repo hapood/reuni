@@ -1,15 +1,15 @@
-import { createArena, ArenaStore, Node, NodeAPI } from "src";
-import MockScene from "./MockScene";
+import { createReuni, Reuni, Node, NodeAPI } from "src";
+import MockStore from "./MockStore";
 
-it("tests createArena", () => {
-  let arenaSotre = createArena();
-  expect(arenaSotre).toBeInstanceOf(ArenaStore);
+it("tests createReuni", () => {
+  let arenaSotre = createReuni();
+  expect(arenaSotre).toBeInstanceOf(Reuni);
 });
 
 it("tests ArenaSotre mount/unmount node", () => {
-  let arenaSotre = createArena();
+  let arenaSotre = createReuni();
   let node1 = arenaSotre.mountNode(null, "node1");
-  expect(arenaSotre).toBeInstanceOf(ArenaStore);
+  expect(arenaSotre).toBeInstanceOf(Reuni);
   let node1Child1 = node1.mountChild(null, "node1Child");
   expect(node1Child1).toBeInstanceOf(NodeAPI);
   let node1Child2 = node1.mountChild("node1ChildKey", "node1Child") as NodeAPI;
@@ -24,17 +24,17 @@ it("tests ArenaSotre mount/unmount node", () => {
   expect(keys.length).toBe(1);
 });
 
-it("tests ArenaSotre add/delete Scene", () => {
-  let arenaSotre = createArena();
+it("tests ArenaSotre add/delete Store", () => {
+  let arenaSotre = createReuni();
   let node1 = arenaSotre.mountNode(null, "node1");
-  let sceneName1 = node1.addScene("scene1", MockScene) as string;
-  let sceneName2 = node1.addScene("scene2", MockScene) as string;
-  expect(sceneName1).toBe("scene1");
-  node1.deleteScene(sceneName1);
+  let storeName1 = node1.addStore("store1", MockStore) as string;
+  let storeName2 = node1.addStore("store2", MockStore) as string;
+  expect(storeName1).toBe("store1");
+  node1.deleteStore(storeName1);
   let keys = Object.keys(
-    (arenaSotre.getNode(node1.getId()) as Node).getScenes()
+    (arenaSotre.getNode(node1.getId()) as Node).getStores()
   );
   expect(keys.length).toBe(1);
   node1.destroy();
-  expect(node1.findScene(sceneName2)).toBeNull;
+  expect(node1.findStore(storeName2)).toBeNull;
 });
