@@ -1,5 +1,8 @@
 node_modules/
 coverage/
-build/
 example/build/
 tmp/
+.build.cjs/
+.build.es/
+build/
+*.log

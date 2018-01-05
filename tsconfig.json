@@ -1,0 +1,32 @@
+{
+  "version": "2.6.2",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "src": [
+        "src"
+      ]
+    },
+    "experimentalDecorators": true,
+    "target": "es5",
+    "outDir": "tmp",
+    "sourceMap": true,
+    "declaration": true,
+    "module": "esnext",
+    "removeComments": true,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noImplicitUseStrict": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "lib": [
+      "es2017",
+      "dom"
+    ],
+    "jsx": "react"
+  },
+  "exclude": [
+    "node_modules",
+    "example"
+  ]
+}
