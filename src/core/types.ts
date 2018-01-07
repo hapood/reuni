@@ -39,3 +39,9 @@ export type Observer = {
   care: Record<string, Record<string, string[]>>;
   cb: (isValid: boolean) => void;
 };
+
+export type SceneCareDict = {};
+
+export type SubscriberCareDict = {
+  [nodeId: string]: SceneCareDict;
+};
