@@ -2,6 +2,7 @@ import Store from "./Store";
 import NodeItem from "./Node";
 import TaskStatus from "../api/TaskStatus";
 import PropertyType from "../api/PropertyType";
+import ObserveType from "../api/ObserveType";
 
 export type NodeDictItem = {
   path: string[];
@@ -36,12 +37,25 @@ export type NodeItem = {
 };
 
 export type Observer = {
-  care: Record<string, Record<string, string[]>>;
+  care: ObserverCareDict;
   cb: (isValid: boolean) => void;
 };
 
-export type SceneCareDict = {};
+export type KeyCareItem = {
+  observeType: ObserveType;
+  keys: string[];
+};
 
-export type SubscriberCareDict = {
-  [nodeId: string]: SceneCareDict;
+export type StoreCareDict = {
+  [storeName: string]: KeyCareItem;
+};
+
+export type ObserverCareDict = {
+  [nodeId: string]: StoreCareDict;
+};
+
+export type StoreValidDict = {
+  [nodeId: string]: {
+    [storeName: string]: boolean;
+  };
 };

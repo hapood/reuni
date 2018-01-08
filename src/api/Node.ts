@@ -2,6 +2,8 @@ import Store from "../core/Store";
 import TaskManager from "../core/TaskManager";
 import NodeItem from "../core/Node";
 import Reuni from "../core/Reuni";
+import ObserveType from "../api/ObserveType";
+import { ObserverCare } from "./types";
 
 export default class Node {
   private _nodeItem: NodeItem;
@@ -27,11 +29,8 @@ export default class Node {
     return this._nodeItem.isDestroyed();
   }
 
-  subscribe(
-    care: Record<string, Record<string, string[]>>,
-    cb: (isValid: boolean) => void
-  ) {
-    return this._nodeItem.subscribe(care, cb);
+  observe(care: ObserverCare, cb: (isValid: boolean) => void) {
+    return this._nodeItem.observe(care, cb);
   }
 
   addStore(storeName: string, RawStore: new () => any) {

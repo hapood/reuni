@@ -1,5 +1,13 @@
-import { NodeDict, TaskItem, TaskDict, TaskDictItem } from "./types";
+import {
+  NodeDict,
+  TaskItem,
+  TaskDict,
+  TaskDictItem,
+  KeyCareItem,
+  ObserverCareDict
+} from "./types";
 import PropertyType from "../api/PropertyType";
+import ObserveType from "../api/ObserveType";
 import Store from "./Store";
 import TaskManager from "./TaskManager";
 import Task from "../api/TaskDescriptor";
@@ -199,7 +207,7 @@ function startStoreTask(
 ) {
   let t = taskManager.startTask();
   store.addTask(taskName, t);
-  t.subscribe((tStatus: TaskStatus) => {
+  t.observe((tStatus: TaskStatus) => {
     if (process.env.NODE_ENV !== "production") {
       if (tStatus === TaskStatus.CANCELED) {
         console.info(`Task [${taskName}] is canceled, taskId: ${t.getId()}.`);
@@ -243,4 +251,33 @@ export function asyncTaskProxy(
   });
   (r as any)[tKey] = t;
   return r;
+}
+
+function storeObserveInclude(
+  dirtyKeys: Record<string, boolean>,
+  keys: string[]
+) {
+  for (let k = 0; k < keys.length; k++) {
+    let key = keys[k];
+    if (dirtyKeys[key] != null) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function storeObserveMatch(
+  dirtyKeys: Record<string, boolean>,
+  keyObserve: KeyCareItem
+) {
+  switch (keyObserve.observeType) {
+    case ObserveType.ALL:
+      return true;
+    case ObserveType.INCLUDE:
+      return storeObserveInclude(dirtyKeys, keyObserve.keys);
+    case ObserveType.EXCLUDE:
+      return storeObserveInclude(dirtyKeys, keyObserve.keys);
+    default:
+      return false;
+  }
 }

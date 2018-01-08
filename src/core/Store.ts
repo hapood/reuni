@@ -4,8 +4,11 @@ import TaskManager from "./TaskManager";
 import Task from "../api/TaskDescriptor";
 import { TaskDict, Observer } from "./types";
 import PropertyType from "../api/PropertyType";
+import ObserveType from "../api/ObserveType";
 import { getCache } from "../api/decorator";
+import { ObserverCare } from "../api/types";
 import Reuni from "src/core/Reuni";
+import { DecoratorValue as StoreDecoratorValue } from "../api/store";
 
 export default class Store {
   private _name: string;
@@ -37,8 +40,8 @@ export default class Store {
     let taskManager = node.getTaskManager();
     let taskDesrDict: Record<string, Record<string, Task>> = {};
     let tmpTask;
-    let subscribeDict: Record<string, Record<string, string[]>> = {
-      $: { [storeName]: [] }
+    let observeDict: ObserverCare = {
+      $: { [storeName]: { observeType: ObserveType.INCLUDE, keys: [] } }
     };
     let storeDict: Record<
       string,
@@ -70,14 +73,17 @@ export default class Store {
             task: tmpTask
           };
           break;
-        case PropertyType.SCENE:
-          let value: { store: string; node: string } = item.value;
-          let careStores = subscribeDict[value.node];
-          if (subscribeDict[value.node] == null) {
+        case PropertyType.STORE:
+          let value = item.value as StoreDecoratorValue;
+          let careStores = observeDict[value.node];
+          if (observeDict[value.node] == null) {
             careStores = {};
-            subscribeDict[value.node] = careStores;
+            observeDict[value.node] = careStores;
           }
-          careStores[value.store] = [];
+          careStores[value.store] = {
+            observeType: value.observeType,
+            keys: value.keys
+          };
           storeDict[key] = value;
           break;
       }
@@ -89,7 +95,7 @@ export default class Store {
     this._taskDict = taskDict;
     this._isDestroyed = false;
     this._node = node;
-    this._observer = node.subscribe(subscribeDict, isValid => {
+    this._observer = node.observe(observeDict, isValid => {
       this.setIsValid(isValid);
     });
     this._storeDict = storeDict;

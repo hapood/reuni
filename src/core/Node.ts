@@ -1,7 +1,8 @@
 import Store from "./Store";
 import TaskManager from "../core/TaskManager";
 import Reuni from "./Reuni";
-import { Observer } from "./types";
+import { ObserverCare } from "../api/types";
+import { Observer, ObserverCareDict } from "./types";
 
 export default class NodeItem {
   private _id: string;
@@ -15,12 +16,7 @@ export default class NodeItem {
   private _isDestroyed: boolean;
   private _arenaStore: Reuni;
 
-  constructor(
-    id: string,
-    name: string,
-    arenaStore: Reuni,
-    parent?: NodeItem
-  ) {
+  constructor(id: string, name: string, arenaStore: Reuni, parent?: NodeItem) {
     this._id = id;
     this._name = name;
     this._parent = parent;
@@ -45,11 +41,8 @@ export default class NodeItem {
     return this._parent;
   }
 
-  hasStores(storeNames: string[]) {
-    let nullIndex = storeNames.findIndex(
-      storeName => this._stores[storeName] == null
-    );
-    return nullIndex < 0 ? true : false;
+  hasStore(storeName: string) {
+    return this._stores[storeName] != null;
   }
 
   destroy(): null | string[] {
@@ -175,11 +168,8 @@ export default class NodeItem {
     return this._arenaStore;
   }
 
-  subscribe(
-    care: Record<string, Record<string, string[]>>,
-    cb: (isValid: boolean) => void
-  ) {
-    let observer = this._arenaStore.subscribe(this._id, care, cb);
+  observe(care: ObserverCare, cb: (isValid: boolean) => void) {
+    let observer = this._arenaStore.observe(this._id, care, cb);
     return observer;
   }
 

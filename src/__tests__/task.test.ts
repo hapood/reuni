@@ -1,4 +1,4 @@
-import { createReuni, getTaskDescriptor } from "src";
+import { createReuni, getTaskDescriptor, ObserveType } from "src";
 import MixedStore from "./MixedStore";
 import MonoStore from "./MonoStore";
 
@@ -7,10 +7,10 @@ it("Store works with cancel", done => {
   let node1 = arenaSotre.mountNode(null, "node1");
   let monoStore = node1.addStore("monoStore", MonoStore) as string;
   let mixedStore = node1.addStore("mixedStore", MixedStore) as string;
-  node1.subscribe(
+  node1.observe(
     {
       $: {
-        [monoStore]: ["cnt"]
+        [monoStore]: { observeType: ObserveType.INCLUDE, keys: ["cnt"] }
       }
     },
     (isValid: boolean) => {

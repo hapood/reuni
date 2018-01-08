@@ -1,15 +1,15 @@
-import { createReuni, Node, getTaskDescriptor } from "src";
+import { createReuni, Node, getTaskDescriptor, ObserveType } from "src";
 import MonoStore from "./MonoStore";
 
-it("Store works with subscribe", done => {
+it("Store works with observe", done => {
   let arenaSotre = createReuni();
   let node1 = arenaSotre.mountNode(null, "node1");
   let storeName = node1.addStore("monoStore", MonoStore) as string;
   let cbId = 0;
-  node1.subscribe(
+  node1.observe(
     {
       $: {
-        [storeName]: ["cnt"]
+        [storeName]: { observeType: ObserveType.INCLUDE, keys: ["cnt"] }
       }
     },
     (isValid: boolean) => {
@@ -39,10 +39,10 @@ it("Store works with cancel", done => {
   let arenaSotre = createReuni();
   let node1 = arenaSotre.mountNode(null, "node1");
   let storeName = node1.addStore("MonoStore", MonoStore) as string;
-  node1.subscribe(
+  node1.observe(
     {
       $: {
-        [storeName]: ["cnt"]
+        [storeName]: { observeType: ObserveType.INCLUDE, keys: ["cnt"] }
       }
     },
     (isValid: boolean) => {

@@ -33,7 +33,7 @@ export default class Task {
     }
   }
 
-  subscribe(cb: (tStatus: TaskStatus) => void) {
+  observe(cb: (tStatus: TaskStatus) => void) {
     if (this.taskItem.isCanceled !== true && this.taskItem.isDone !== true) {
       let observers = this.taskItem.observers;
       observers.push(cb);
