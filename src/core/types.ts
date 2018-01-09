@@ -7,7 +7,6 @@ import ObserveType from "../api/ObserveType";
 export type NodeDictItem = {
   path: string[];
   ref: NodeItem;
-  nameDict: Record<string, string>;
   name: string;
 };
 
@@ -57,5 +56,12 @@ export type ObserverCareDict = {
 export type StoreValidDict = {
   [nodeId: string]: {
     [storeName: string]: boolean;
+  };
+};
+
+export type NodeNameDict = {
+  [nodeName: string]: {
+    symbol: symbol;
+    ids: string[];
   };
 };

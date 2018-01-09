@@ -7,7 +7,7 @@ import {
   KeyCareItem,
   StoreValidDict
 } from "./types";
-import { genId, storeObserveMatch } from "./utils";
+import { genId, storeObserveMatch, buildNodeNameDict } from "./utils";
 import Store from "./Store";
 import NodeAPI from "../api/Node";
 import { ObserverCare } from "../api/types";
@@ -26,12 +26,17 @@ export default class Reuni {
     let nodeId = genId();
     this._rootId = nodeId;
     let rootName = "$root";
-    let rootNodeItem = new NodeItem(nodeId, rootName, this);
+    let rootSymbol = Symbol("root");
+    let rootNodeItem = new NodeItem(
+      nodeId,
+      rootName,
+      this,
+      buildNodeNameDict({}, rootName, nodeId, rootSymbol)
+    );
     this._nodeDict = {
       [nodeId]: {
         path: [nodeId],
         ref: rootNodeItem,
-        nameDict: { $: nodeId },
         name: rootName
       }
     };
@@ -58,8 +63,9 @@ export default class Reuni {
 
   mountNode(
     nodeId: string | undefined | null,
+    parentId: string | undefined | null,
     nodeName: string,
-    parentId?: string
+    thread: symbol
   ) {
     let newNodeId = nodeId;
     if (newNodeId != null) {
@@ -93,16 +99,24 @@ export default class Reuni {
         'Error occurred while mounting node, name of node can not start with "$".'
       );
     }
-    let newNode = new NodeItem(newNodeId, nodeName, this, pNode.ref);
+    let nodeNameDict = buildNodeNameDict(
+      pNode.ref.getNodeNameDict(),
+      nodeName,
+      newNodeId,
+      thread
+    );
+    let newNode = new NodeItem(
+      newNodeId,
+      nodeName,
+      this,
+      nodeNameDict,
+      pNode.ref
+    );
     nodePath = pNode.path.concat(newNodeId);
     this._nodeDict[newNodeId] = {
       path: nodePath,
       ref: newNode,
-      name: nodeName,
-      nameDict: Object.assign({}, pNode.nameDict, {
-        [pNode.name]: parentId,
-        $: nodeId
-      })
+      name: nodeName
     };
     pNode.ref.mountChild(newNodeId, newNode);
     return new NodeAPI(newNode);
@@ -231,40 +245,8 @@ export default class Reuni {
     return node.ref;
   }
 
-  observe(
-    anchorId: string,
-    care: ObserverCare,
-    cb: (isValid: boolean) => void
-  ) {
-    let anchorNode = this._nodeDict[anchorId];
-    let node: NodeDictItem;
-    let newCare: ObserverCareDict = {};
-    Object.keys(care).map(nodeName => {
-      let nodeId;
-      if (nodeName == "$") {
-        node = anchorNode;
-        nodeId = anchorId;
-      } else {
-        nodeId = anchorNode.nameDict[nodeName];
-        if (nodeId == null) {
-          throw new Error(
-            `Error occurred while adding observer to node [${anchorId}], parent node with name [${nodeName}] does not exist.`
-          );
-        }
-        node = this._nodeDict[nodeId];
-      }
-      if (node == null) {
-        throw new Error(
-          `Error occurred while adding observer to node, node [${nodeId}] does not exist.`
-        );
-      }
-      let storeCareDict: StoreCareDict = {};
-      Object.entries(care[nodeName]).forEach(([storeName, keyCare]) => {
-        storeCareDict[storeName] = keyCare;
-      });
-      newCare[nodeId] = storeCareDict;
-    });
-    let curObserver: Observer = { care: newCare, cb };
+  observe(care: ObserverCare, cb: (isValid: boolean) => void) {
+    let curObserver: Observer = { care, cb };
     this._observers.push(curObserver);
     return curObserver;
   }

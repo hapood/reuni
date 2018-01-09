@@ -2,7 +2,7 @@ import Store from "./Store";
 import TaskManager from "../core/TaskManager";
 import Reuni from "./Reuni";
 import { ObserverCare } from "../api/types";
-import { Observer, ObserverCareDict } from "./types";
+import { Observer, ObserverCareDict ，NodeNameDict} from "./types";
 
 export default class NodeItem {
   private _id: string;
@@ -15,8 +15,15 @@ export default class NodeItem {
   private _dirtyNodes: Record<string, boolean>;
   private _isDestroyed: boolean;
   private _arenaStore: Reuni;
+  private _nodeNameDict: NodeNameDict;
 
-  constructor(id: string, name: string, arenaStore: Reuni, parent?: NodeItem) {
+  constructor(
+    id: string,
+    name: string,
+    arenaStore: Reuni,
+    nodeNameDict: NodeNameDict,
+    parent?: NodeItem
+  ) {
     this._id = id;
     this._name = name;
     this._parent = parent;
@@ -27,6 +34,7 @@ export default class NodeItem {
     this._dirtyStoreKeys = {};
     this._isDestroyed = false;
     this._arenaStore = arenaStore;
+    this._nodeNameDict = nodeNameDict;
   }
 
   getId() {
@@ -39,6 +47,10 @@ export default class NodeItem {
 
   getParent() {
     return this._parent;
+  }
+
+  getNodeNameDict() {
+    return this._nodeNameDict;
   }
 
   hasStore(storeName: string) {
@@ -169,7 +181,19 @@ export default class NodeItem {
   }
 
   observe(care: ObserverCare, cb: (isValid: boolean) => void) {
-    let observer = this._arenaStore.observe(this._id, care, cb);
+    let newCare: ObserverCareDict = {};
+    Object.keys(care).map(nodeName => {
+      let nodeId = this._nodeNameDict[nodeName];
+      if (nodeId == null) {
+        throw new Error(
+          `Error occurred while adding observer to node [${
+            this._id
+          }], parent node with name [${nodeName}] does not exist.`
+        );
+      }
+      newCare[nodeId] = care[nodeName];
+    });
+    let observer = this._arenaStore.observe(care, cb);
     return observer;
   }
 
@@ -185,7 +209,11 @@ export default class NodeItem {
     return store.getEntity();
   }
 
-  findStoreEntity(storeName: string, nodeName = "$") {
+  findNodeSE(storeName: string, nodeName:string) {
+    return this._arenaStore.getStoreEntity(this._id, nodeName, storeName);
+  }
+
+  findThreadSE(storeName: string, level:number=0) {
     return this._arenaStore.getStoreEntity(this._id, nodeName, storeName);
   }
 }
