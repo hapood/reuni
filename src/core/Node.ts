@@ -41,10 +41,6 @@ export default class NodeItem {
     return this._parent;
   }
 
-  hasStore(storeName: string) {
-    return this._stores[storeName] != null;
-  }
-
   destroy(): null | string[] {
     let observers: Observer[] = [];
     Object.values(this._stores).forEach(store => {
