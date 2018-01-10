@@ -1,4 +1,4 @@
-﻿import Store from "./Store";
+import Store from "./Store";
 import TaskManager from "../core/TaskManager";
 import Reuni from "./Reuni";
 import { ObserverCare } from "../api/types";
@@ -48,10 +48,18 @@ export default class NodeItem {
   getParent() {
     return this._parent;
   }
-  
+
+<<<<<<< HEAD
+=======
   getNodeNameDict() {
     return this._nodeNameDict;
   }
+
+  hasStore(storeName: string) {
+    return this._stores[storeName] != null;
+  }
+
+>>>>>>> origin/issue5
   destroy(): null | string[] {
     let observers: Observer[] = [];
     Object.values(this._stores).forEach(store => {

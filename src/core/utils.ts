@@ -4,7 +4,8 @@ import {
   TaskDict,
   TaskDictItem,
   KeyCareItem,
-  ObserverCareDict
+  ObserverCareDict,
+  NodeNameDict
 } from "./types";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
@@ -280,4 +281,30 @@ export function storeObserveMatch(
     default:
       return false;
   }
+}
+
+export function buildNodeNameDict(
+  oldNameDict: NodeNameDict,
+  name: string,
+  nodeId: string,
+  thread: symbol
+): NodeNameDict {
+  let threadItem = oldNameDict[name];
+  if (threadItem.symbol !== thread) {
+    throw new Error(
+      `Error occurred generating node name dict, name [${name}] if conflict.`
+    );
+  }
+  let newThreadItem;
+  if (threadItem == null) {
+    newThreadItem = {
+      symbol: thread,
+      ids: [nodeId]
+    };
+  } else {
+    newThreadItem = Object.assign({}, threadItem, {
+      ids: [nodeId].concat(threadItem.ids)
+    });
+  }
+  return Object.assign({}, oldNameDict, { name: newThreadItem });
 }
