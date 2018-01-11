@@ -177,17 +177,6 @@ export default class NodeItem {
 
   observe(care: ObserverCare, cb: (isValid: boolean) => void) {
     let newCare: ObserverCareDict = {};
-    Object.keys(care).map(nodeName => {
-      let nodeId = this._nodeNameDict[nodeName];
-      if (nodeId == null) {
-        throw new Error(
-          `Error occurred while adding observer to node [${
-            this._id
-          }], parent node with name [${nodeName}] does not exist.`
-        );
-      }
-      newCare[nodeId] = care[nodeName];
-    });
     let observer = this._arenaStore.observe(care, cb);
     return observer;
   }

@@ -7,5 +7,6 @@ export {
   getTaskDescriptor,
   store,
   delay,
-  ObserveType
+  ObserveType,
+  StoreObserver
 } from "./api";

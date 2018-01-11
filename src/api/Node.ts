@@ -30,7 +30,21 @@ export default class Node {
   }
 
   observe(care: ObserverCare, cb: (isValid: boolean) => void) {
-    return this._nodeItem.observe(care, cb);
+    if (this._nodeItem.isDestroyed() !== true) {
+      Object.keys(care).map(nodeName => {
+        let nodeId = this._nodeNameDict[nodeName];
+        if (nodeId == null) {
+          throw new Error(
+            `Error occurred while adding observer to node [${
+              this._id
+            }], parent node with name [${nodeName}] does not exist.`
+          );
+        }
+        newCare[nodeId] = care[nodeName];
+      });
+      return this._nodeItem.observe(care, cb);
+    }
+    return null;
   }
 
   addStore(storeName: string, RawStore: new () => any) {
