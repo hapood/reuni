@@ -38,6 +38,7 @@ export default class NodeAPI {
       let nameDict = this._nodeItem.getNameDict();
       care.threads.forEach(storeOb => {
         let nodeId = threadDict[thread][storeOb.parent];
+        let storeName = storeOb.name;
         if (nodeId == null) {
           throw new Error(
             `Error occurred while adding observer to node [${this._nodeItem.getId()}], parent thread node [${
@@ -45,7 +46,19 @@ export default class NodeAPI {
             }] does not exist.`
           );
         }
-        careDict[nodeId] = care[nodeName];
+        let storeDict = careDict[nodeId];
+        if (storeDict == null) {
+          storeDict = {};
+          careDict[nodeId] = storeDict;
+        }
+        let keyCare = storeDict[storeName];
+        if (keyCare == null) {
+          storeDict[storeName] = storeOb.store;
+        } else {
+          throw new Error(
+            `Error occurred while adding observer to store [${storeName}] of node [${nodeId}], you can not observe store duplicately.`
+          );
+        }
       });
       care.names.forEach(nodeName => {
         let nodeId = this._nodeNameDict[nodeName];

@@ -6,7 +6,6 @@ import { TaskDict, Observer } from "./types";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
 import { getCache } from "../api/decorator";
-import { ObserverCare } from "../api/types";
 import Reuni from "src/core/Reuni";
 import { DecoratorValue as StoreDecoratorValue } from "../api/store";
 
@@ -40,9 +39,6 @@ export default class Store {
     let taskManager = node.getTaskManager();
     let taskDesrDict: Record<string, Record<string, Task>> = {};
     let tmpTask;
-    let observeDict: ObserverCare = {
-      $: { [storeName]: { observeType: ObserveType.INCLUDE, keys: [] } }
-    };
     let storeDict: Record<
       string,
       {
