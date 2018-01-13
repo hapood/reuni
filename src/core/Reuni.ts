@@ -7,12 +7,11 @@ import {
   KeyCareItem,
   StoreValidDict
 } from "./types";
-import { genId, storeObserveMatch, buildNodeNameDict } from "./utils";
+import { genId, storeObserveMatch } from "./utils";
 import Store from "./Store";
 import NodeAPI from "../api/Node";
-import { ObserverCare } from "../api/types";
 import TaskManager from "./TaskManager";
-import NodeItem from "./Node";
+import Node from "./Node";
 
 export default class Reuni {
   private _nodeDict: NodeDict;
@@ -25,19 +24,15 @@ export default class Reuni {
   constructor() {
     let nodeId = genId();
     this._rootId = nodeId;
-    let rootName = "$root";
-    let rootSymbol = Symbol("root");
-    let rootNodeItem = new NodeItem(
-      nodeId,
-      rootName,
-      this,
-      buildNodeNameDict({}, rootName, nodeId, rootSymbol)
-    );
+    let rootName = "_root";
+    let rootNodeItem = new Node(this, {
+      id: nodeId,
+      symbol: Symbol(rootName)
+    });
     this._nodeDict = {
       [nodeId]: {
         path: [nodeId],
-        ref: rootNodeItem,
-        name: rootName
+        ref: rootNodeItem
       }
     };
     this._taskManager = new TaskManager();
@@ -62,12 +57,16 @@ export default class Reuni {
   }
 
   mountNode(
-    nodeId: string | undefined | null,
-    parentId: string | undefined | null,
-    nodeName: string,
-    thread: symbol
+    thread: symbol,
+    node: {
+      id?: string;
+      name?: string;
+      parentId?: string | undefined | null;
+    } = {}
   ) {
-    let newNodeId = nodeId;
+    let newNodeId: string | undefined | null = node.id,
+      parentId = node.parentId,
+      nodeName = node.name;
     if (newNodeId != null) {
       if (this._nodeDict[newNodeId] != null) {
         throw new Error(
@@ -94,18 +93,13 @@ export default class Reuni {
         `Error occurred while mounting node, parent [${parentId}] does not exist.`
       );
     }
-    if (nodeName.indexOf("$") === 0) {
-      throw new Error(
-        'Error occurred while mounting node, name of node can not start with "$".'
-      );
-    }
     let nodeNameDict = buildNodeNameDict(
       pNode.ref.getNodeNameDict(),
       nodeName,
       newNodeId,
       thread
     );
-    let newNode = new NodeItem(
+    let newNode = new Node(
       newNodeId,
       nodeName,
       this,
@@ -115,8 +109,7 @@ export default class Reuni {
     nodePath = pNode.path.concat(newNodeId);
     this._nodeDict[newNodeId] = {
       path: nodePath,
-      ref: newNode,
-      name: nodeName
+      ref: newNode
     };
     pNode.ref.mountChild(newNodeId, newNode);
     return new NodeAPI(newNode);
@@ -158,7 +151,7 @@ export default class Reuni {
         for (let i = 0; i < careNodeIdList.length; i++) {
           let nodeId = careNodeIdList[i];
           let storeValidDict = this._storeValidDict[nodeId];
-          let node = this.getNode(nodeId) as NodeItem;
+          let node = this.getNode(nodeId) as Node;
           let storeCareDict = observer.care[nodeId];
           let storeNames = Object.keys(storeCareDict);
           for (let i = 0; i < storeNames.length; i++) {
@@ -245,7 +238,7 @@ export default class Reuni {
     return node.ref;
   }
 
-  observe(care: ObserverCare, cb: (isValid: boolean) => void) {
+  observe(care: ObserverCareDict, cb: (isValid: boolean) => void) {
     let curObserver: Observer = { care, cb };
     this._observers.push(curObserver);
     return curObserver;
@@ -333,6 +326,6 @@ export default class Reuni {
   }
 }
 
-export function createReuni(stateTree?: NodeItem) {
+export function createReuni(stateTree?: Node) {
   return new Reuni();
 }

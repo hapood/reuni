@@ -1,12 +1,4 @@
-import {
-  NodeDict,
-  TaskItem,
-  TaskDict,
-  TaskDictItem,
-  KeyCareItem,
-  ObserverCareDict,
-  NodeNameDict
-} from "./types";
+import { TaskDict, KeyCareItem, NodeNameDict, NodeThreadDict } from "./types";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
 import Store from "./Store";
@@ -283,28 +275,68 @@ export function storeObserveMatch(
   }
 }
 
-export function buildNodeNameDict(
-  oldNameDict: NodeNameDict,
-  name: string,
-  nodeId: string,
-  thread: symbol
-): NodeNameDict {
-  let threadItem = oldNameDict[name];
-  if (threadItem.symbol !== thread) {
-    throw new Error(
-      `Error occurred generating node name dict, name [${name}] if conflict.`
-    );
+export function buildNodeNameDict(node: {
+  id: string;
+  symbol: symbol;
+  name?: string;
+  parent?: NodeItem | undefined | null;
+}): NodeNameDict {
+  let oldNameDict,
+    parentNode = node.parent,
+    threadSymbol = node.symbol,
+    nodeName = node.name;
+  if (parentNode != null) {
+    oldNameDict = parentNode.getNameDict();
+  } else {
+    oldNameDict = {};
   }
-  let newThreadItem;
-  if (threadItem == null) {
-    newThreadItem = {
-      symbol: thread,
-      ids: [nodeId]
+  if (nodeName == null) {
+    return Object.assign({}, oldNameDict);
+  }
+  let nameItem = oldNameDict[nodeName];
+  let newNameItem;
+  if (nameItem == null) {
+    newNameItem = {
+      symbol: threadSymbol,
+      ids: [node.id]
     };
   } else {
-    newThreadItem = Object.assign({}, threadItem, {
-      ids: [nodeId].concat(threadItem.ids)
+    if (nameItem.symbol !== threadSymbol) {
+      throw new Error(
+        `Error occurred generating node name dict, name [${nodeName}] is conflict.`
+      );
+    }
+    newNameItem = Object.assign({}, nameItem, {
+      ids: [node.id].concat(nameItem.ids)
     });
   }
-  return Object.assign({}, oldNameDict, { name: newThreadItem });
+  return Object.assign({}, oldNameDict, {
+    [nodeName]: newNameItem
+  });
+}
+
+export function buildNodeThreadDict(node: {
+  id: string;
+  symbol: symbol;
+  name?: string;
+  parent?: NodeItem | undefined | null;
+}): NodeThreadDict {
+  let oldThreads,
+    parentNode = node.parent,
+    threadSymbol = node.symbol;
+  if (parentNode != null) {
+    oldThreads = parentNode.getThreadDict();
+  } else {
+    oldThreads = {};
+  }
+  let threadItem = oldThreads[threadSymbol];
+  let newThreadItem;
+  if (threadItem == null) {
+    newThreadItem = [node.id];
+  } else {
+    newThreadItem = [node.id].concat(threadItem);
+  }
+  return Object.assign({}, oldThreads, {
+    [threadSymbol]: newThreadItem
+  });
 }

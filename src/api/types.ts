@@ -11,7 +11,7 @@ export type ObserverCareName = {
   store: KeyCareItem;
 };
 
-export type NodeCareCategory={
-  name: ObserverCareName[];
-  thread: ObserverCareThread[];
-}
+export type NodeCareCategory = {
+  names: ObserverCareName[];
+  threads: ObserverCareThread[];
+};

@@ -1,14 +1,16 @@
 import Store from "../core/Store";
 import TaskManager from "../core/TaskManager";
-import NodeItem from "../core/Node";
+import Node from "../core/Node";
 import Reuni from "../core/Reuni";
 import ObserveType from "../api/ObserveType";
-import { ObserverCare } from "./types";
+import { NodeCareCategory } from "./types";
+import { ObserverCareDict ,NodeNameDict} from "../core/types";
 
 export default class Node {
-  private _nodeItem: NodeItem;
+  private _nodeItem: Node;
+  _nodeNameDict: NodeNameDict;
 
-  constructor(nodeItem: NodeItem) {
+  constructor(nodeItem: Node) {
     this._nodeItem = nodeItem;
   }
 
@@ -29,9 +31,21 @@ export default class Node {
     return this._nodeItem.isDestroyed();
   }
 
-  observe(care: ObserverCare, cb: (isValid: boolean) => void) {
+  observe(care: NodeCareCategory, cb: (isValid: boolean) => void) {
     if (this._nodeItem.isDestroyed() !== true) {
-      Object.keys(care).map(nodeName => {
+      let careDict: ObserverCareDict = {};
+      care.threads.forEach(nodeName => {
+        let nodeId = this._nodeNameDict[nodeName];
+        if (nodeId == null) {
+          throw new Error(
+            `Error occurred while adding observer to node [${
+              this._id
+            }], parent node with name [${nodeName}] does not exist.`
+          );
+        }
+        newCare[nodeId] = care[nodeName];
+      });
+      care.names.forEach(nodeName => {
         let nodeId = this._nodeNameDict[nodeName];
         if (nodeId == null) {
           throw new Error(

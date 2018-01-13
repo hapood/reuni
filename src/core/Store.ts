@@ -1,4 +1,4 @@
-import NodeItem from "./Node";
+import Node from "./Node";
 import { buildStoreEntity, taskProxy, asyncTaskProxy } from "./utils";
 import TaskManager from "./TaskManager";
 import Task from "../api/TaskDescriptor";
@@ -17,7 +17,7 @@ export default class Store {
   private _state: any;
   private _isDestroyed: boolean;
   private _taskDict: TaskDict;
-  private _node: NodeItem;
+  private _node: Node;
   private _entity: any;
   private _taskDesrDict: Record<string, Record<string, Task>>;
   private _isValid: boolean;
@@ -30,7 +30,7 @@ export default class Store {
     }
   >;
 
-  constructor(storeName: string, RawStore: new () => any, node: NodeItem) {
+  constructor(storeName: string, RawStore: new () => any, node: Node) {
     this._name = storeName;
     let taskDict: TaskDict = {};
     let stateDict: Record<string, true> = {};

@@ -6,5 +6,5 @@ it("tests StoreObserver", () => {
     storeExclude.excludes(["keyExclude"]);
   })
     .byName("parent", ({ parentStore }) => {})
-    .byThread(-2, ({ threadStore }) => {});
+    .byThread(2, ({ threadStore }) => {});
 });

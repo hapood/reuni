@@ -2,31 +2,41 @@
 import TaskManager from "../core/TaskManager";
 import Reuni from "./Reuni";
 import { ObserverCare } from "../api/types";
-import { Observer, ObserverCareDict ，NodeNameDict} from "./types";
+import {
+  Observer,
+  ObserverCareDict,
+  NodeNameDict,
+  NodeThreadDict
+} from "./types";
+import { buildNodeNameDict, buildNodeThreadDict } from "./utils";
 
-export default class NodeItem {
+export default class Node {
   private _id: string;
   private _name: string;
-  private _parent: NodeItem | undefined | null;
-  private _children: Record<string, NodeItem>;
+  private _parent: Node | undefined | null;
+  private _children: Record<string, Node>;
   private _stores: Record<string, Store>;
   private _dirtyStores: Record<string, boolean>;
   private _dirtyStoreKeys: Record<string, Record<string, boolean>>;
   private _dirtyNodes: Record<string, boolean>;
   private _isDestroyed: boolean;
   private _arenaStore: Reuni;
-  private _nodeNameDict: NodeNameDict;
+  private _nameDict: NodeNameDict;
+  private _threadDict: NodeThreadDict;
+  private _symbol: symbol;
 
   constructor(
-    id: string,
-    name: string,
     arenaStore: Reuni,
-    nodeNameDict: NodeNameDict,
-    parent?: NodeItem
+    node: {
+      id: string;
+      symbol: symbol;
+      name?: string;
+      parent?: Node | undefined | null;
+    }
   ) {
-    this._id = id;
+    this._id = node.id;
     this._name = name;
-    this._parent = parent;
+    this._parent = node.parent;
     this._stores = {};
     this._children = {};
     this._dirtyNodes = {};
@@ -34,7 +44,17 @@ export default class NodeItem {
     this._dirtyStoreKeys = {};
     this._isDestroyed = false;
     this._arenaStore = arenaStore;
-    this._nodeNameDict = nodeNameDict;
+    this._nameDict = buildNodeNameDict(node);
+    this._threadDict = buildNodeThreadDict(node);
+    this._symbol = node.symbol;
+  }
+
+  getNameDict() {
+    return this._nameDict;
+  }
+
+  getThreadDict() {
+    return this._threadDict;
   }
 
   getId() {
@@ -48,9 +68,9 @@ export default class NodeItem {
   getParent() {
     return this._parent;
   }
-  
+
   getNodeNameDict() {
-    return this._nodeNameDict;
+    return this._nameDict;
   }
   destroy(): null | string[] {
     let observers: Observer[] = [];
@@ -130,7 +150,7 @@ export default class NodeItem {
     return store;
   }
 
-  mountChild(id: string, node: NodeItem) {
+  mountChild(id: string, node: Node) {
     if (this._children[id] != null) {
       throw new Error(
         `Error occurred while mounting node [${
@@ -193,11 +213,11 @@ export default class NodeItem {
     return store.getEntity();
   }
 
-  findNodeSE(storeName: string, nodeName:string) {
+  findNodeSE(storeName: string, nodeName: string) {
     return this._arenaStore.getStoreEntity(this._id, nodeName, storeName);
   }
 
-  findThreadSE(storeName: string, level:number=0) {
+  findThreadSE(storeName: string, level: number = 0) {
     return this._arenaStore.getStoreEntity(this._id, nodeName, storeName);
   }
 }

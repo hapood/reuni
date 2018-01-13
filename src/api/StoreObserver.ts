@@ -40,11 +40,11 @@ export class StoreObserver {
   private _careCate: NodeCareCategory;
 
   constructor(storeGetter?: StoreGetter) {
-    let target: NodeCareCategory = { name: [], thread: [] },
+    let target: NodeCareCategory = { names: [], threads: [] },
       handler = {
         get: function(target: NodeCareCategory, name: string) {
           let [proxy, keyCareItem] = createStoreProxy();
-          target.thread.push({ parent: 0, store: keyCareItem });
+          target.threads.push({ parent: 0, store: keyCareItem });
         }
       };
     if (storeGetter != null) {
@@ -59,7 +59,7 @@ export class StoreObserver {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
         let [proxy, keyCareItem] = createStoreProxy();
-        target.name.push({ name, store: keyCareItem });
+        target.names.push({ name, store: keyCareItem });
       }
     };
     if (storeGetter != null) {
@@ -74,7 +74,7 @@ export class StoreObserver {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
         let [proxy, keyCareItem] = createStoreProxy();
-        target.thread.push({ parent, store: keyCareItem });
+        target.threads.push({ parent, store: keyCareItem });
       }
     };
     if (storeGetter != null) {
