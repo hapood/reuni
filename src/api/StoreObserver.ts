@@ -1,27 +1,39 @@
 import ObserveType from "./ObserveType";
-import {
-  ObserverCareThread,
-  ObserverCareName,
-  NodeCareCategory
-} from "./types";
+import { ThreadStoreCare, NameStoreCare, NodeCareCategory } from "./types";
 import { KeyCareItem } from "../core/types";
 
+export type StoreRename = {
+  (name: string): void;
+};
 export type StoreObserveOptions = {
-  includes: (keys: string[]) => void;
-  excludes: (keys: string[]) => void;
+  includes: (keys: string[]) => { rename: StoreRename };
+  excludes: (keys: string[]) => { rename: StoreRename };
+  rename: StoreRename;
 };
 
 export type StoreGetter = (
   storeOptions: Record<string, StoreObserveOptions>
 ) => void;
 
-function createStoreProxy() {
-  let target: KeyCareItem = { type: ObserveType.ALL, keys: [] },
+function createStoreProxy(): [
+  StoreObserveOptions,
+  KeyCareItem,
+  string | undefined | null
+] {
+  let target: KeyCareItem = {
+      type: ObserveType.ALL,
+      keys: []
+    },
+    newName: string | undefined | null,
     handler = {
       get: function(target: KeyCareItem, name: string) {
-        let setKeys = (keys: string[]) => {
+        let setRename = (rename: string) => {
+          newName = rename;
+        };
+        let setKeys: any = (keys: string[]) => {
           target.keys = keys;
         };
+        setKeys.rename = setRename;
         switch (name) {
           case "includes":
             target.type = ObserveType.INCLUDE;
@@ -29,22 +41,31 @@ function createStoreProxy() {
           case "excludes":
             target.type = ObserveType.EXCLUDE;
             return setKeys;
+          case "rename":
+            target.type = ObserveType.EXCLUDE;
+            return setRename;
         }
         return null;
       }
     };
-  return [new Proxy(target, handler), target];
+  return [new Proxy(target, handler) as any, target, newName];
 }
 
-export class StoreObserver {
+export default class StoreObserver {
   private _careCate: NodeCareCategory;
 
   constructor(storeGetter?: StoreGetter) {
     let target: NodeCareCategory = { names: [], threads: [] },
       handler = {
         get: function(target: NodeCareCategory, name: string) {
-          let [proxy, keyCareItem] = createStoreProxy();
-          target.threads.push({ parent: 0, store: keyCareItem });
+          let [proxy, keyCareItem, newName] = createStoreProxy();
+          target.threads.push({
+            name,
+            parent: 0,
+            store: keyCareItem,
+            rename: newName == null ? name : newName
+          });
+          return proxy;
         }
       };
     if (storeGetter != null) {
@@ -55,11 +76,17 @@ export class StoreObserver {
     this._careCate = target;
   }
 
-  byName(name: string, storeGetter: StoreGetter) {
+  byName(nodeName: string, storeGetter: StoreGetter) {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
-        let [proxy, keyCareItem] = createStoreProxy();
-        target.names.push({ name, store: keyCareItem });
+        let [proxy, keyCareItem, newName] = createStoreProxy();
+        target.names.push({
+          name,
+          nodeName,
+          store: keyCareItem,
+          rename: newName == null ? name : newName
+        });
+        return proxy;
       }
     };
     if (storeGetter != null) {
@@ -73,8 +100,14 @@ export class StoreObserver {
   byThread(parent: number, storeGetter: StoreGetter) {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
-        let [proxy, keyCareItem] = createStoreProxy();
-        target.threads.push({ parent, store: keyCareItem });
+        let [proxy, keyCareItem, newName] = createStoreProxy();
+        target.threads.push({
+          name,
+          parent,
+          store: keyCareItem,
+          rename: newName == null ? name : newName
+        });
+        return proxy;
       }
     };
     if (storeGetter != null) {
@@ -86,12 +119,10 @@ export class StoreObserver {
   }
 }
 
-function storeObserver(
+export function storeObserver(
   storeGetter: (storeOptions: Record<string, StoreObserveOptions>) => void
 ): StoreObserver;
-function storeObserver(): StoreObserver;
-function storeObserver(storeGetter?: any) {
+export function storeObserver(): StoreObserver;
+export function storeObserver(storeGetter?: any) {
   return new StoreObserver(storeGetter);
 }
-
-export default storeObserver;

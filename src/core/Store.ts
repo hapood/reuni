@@ -122,12 +122,6 @@ export default class Store {
 
   setIsValid(isValid: boolean) {
     this._isValid = isValid;
-    Object.entries(this._storeDict).forEach(([storeName, nodeName]) => {
-      this._state[storeName] = this._node.findStoreEntity(
-        nodeName.store,
-        nodeName.node
-      );
-    });
   }
 
   isValid() {

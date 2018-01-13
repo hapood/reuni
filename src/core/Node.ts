@@ -23,13 +23,13 @@ export default class Node {
   private _arenaStore: Reuni;
   private _nameDict: NodeNameDict;
   private _threadDict: NodeThreadDict;
-  private _symbol: symbol;
+  private _thread: symbol;
 
   constructor(
     arenaStore: Reuni,
     node: {
       id: string;
-      symbol: symbol;
+      thread: symbol;
       name?: string;
       parent?: Node | undefined | null;
     }
@@ -46,7 +46,11 @@ export default class Node {
     this._arenaStore = arenaStore;
     this._nameDict = buildNodeNameDict(node);
     this._threadDict = buildNodeThreadDict(node);
-    this._symbol = node.symbol;
+    this._thread = node.thread;
+  }
+
+  getThread() {
+    return this._thread;
   }
 
   getNameDict() {

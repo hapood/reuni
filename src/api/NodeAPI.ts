@@ -4,11 +4,10 @@ import Node from "../core/Node";
 import Reuni from "../core/Reuni";
 import ObserveType from "../api/ObserveType";
 import { NodeCareCategory } from "./types";
-import { ObserverCareDict ,NodeNameDict} from "../core/types";
+import { ObserverCareDict, NodeNameDict } from "../core/types";
 
-export default class Node {
+export default class NodeAPI {
   private _nodeItem: Node;
-  _nodeNameDict: NodeNameDict;
 
   constructor(nodeItem: Node) {
     this._nodeItem = nodeItem;
@@ -34,16 +33,19 @@ export default class Node {
   observe(care: NodeCareCategory, cb: (isValid: boolean) => void) {
     if (this._nodeItem.isDestroyed() !== true) {
       let careDict: ObserverCareDict = {};
-      care.threads.forEach(nodeName => {
-        let nodeId = this._nodeNameDict[nodeName];
+      let thread = this._nodeItem.getThread();
+      let threadDict = this._nodeItem.getThreadDict();
+      let nameDict = this._nodeItem.getNameDict();
+      care.threads.forEach(storeOb => {
+        let nodeId = threadDict[thread][storeOb.parent];
         if (nodeId == null) {
           throw new Error(
-            `Error occurred while adding observer to node [${
-              this._id
-            }], parent node with name [${nodeName}] does not exist.`
+            `Error occurred while adding observer to node [${this._nodeItem.getId()}], parent thread node [${
+              storeOb.parent
+            }] does not exist.`
           );
         }
-        newCare[nodeId] = care[nodeName];
+        careDict[nodeId] = care[nodeName];
       });
       care.names.forEach(nodeName => {
         let nodeId = this._nodeNameDict[nodeName];

@@ -9,7 +9,7 @@ import {
 } from "./types";
 import { genId, storeObserveMatch } from "./utils";
 import Store from "./Store";
-import NodeAPI from "../api/Node";
+import NodeAPI from "../api/NodeAPI";
 import TaskManager from "./TaskManager";
 import Node from "./Node";
 
@@ -27,7 +27,7 @@ export default class Reuni {
     let rootName = "_root";
     let rootNodeItem = new Node(this, {
       id: nodeId,
-      symbol: Symbol(rootName)
+      thread: Symbol(rootName)
     });
     this._nodeDict = {
       [nodeId]: {
@@ -56,14 +56,12 @@ export default class Reuni {
     this._dirtyNodes[nodeId] = dirtyStores;
   }
 
-  mountNode(
-    thread: symbol,
-    node: {
-      id?: string;
-      name?: string;
-      parentId?: string | undefined | null;
-    } = {}
-  ) {
+  mountNode(node: {
+    thread: symbol;
+    id?: string;
+    name?: string;
+    parentId?: string | undefined | null;
+  }) {
     let newNodeId: string | undefined | null = node.id,
       parentId = node.parentId,
       nodeName = node.name;
@@ -93,19 +91,11 @@ export default class Reuni {
         `Error occurred while mounting node, parent [${parentId}] does not exist.`
       );
     }
-    let nodeNameDict = buildNodeNameDict(
-      pNode.ref.getNodeNameDict(),
-      nodeName,
-      newNodeId,
-      thread
-    );
-    let newNode = new Node(
-      newNodeId,
-      nodeName,
-      this,
-      nodeNameDict,
-      pNode.ref
-    );
+    let newNode = new Node(this, {
+      id: newNodeId,
+      thread: node.thread,
+      parent: pNode.ref
+    });
     nodePath = pNode.path.concat(newNodeId);
     this._nodeDict[newNodeId] = {
       path: nodePath,
@@ -150,13 +140,12 @@ export default class Reuni {
         let careNodeIdList = Object.keys(observer.care);
         for (let i = 0; i < careNodeIdList.length; i++) {
           let nodeId = careNodeIdList[i];
-          let storeValidDict = this._storeValidDict[nodeId];
-          let node = this.getNode(nodeId) as Node;
+          let validDict = this._storeValidDict[nodeId];
           let storeCareDict = observer.care[nodeId];
           let storeNames = Object.keys(storeCareDict);
           for (let i = 0; i < storeNames.length; i++) {
             let tmpSName = storeNames[i];
-            if (storeValidDict[tmpSName] !== true) {
+            if (validDict[tmpSName] !== true) {
               isCb = false;
               break;
             }
@@ -288,33 +277,6 @@ export default class Reuni {
       }
     });
     this._dirtyNodes = {};
-  }
-
-  getStoreEntity(anchorId: string, nodeName: string, storeName: string) {
-    let anchorNode = this._nodeDict[anchorId];
-    if (anchorNode == null) {
-      throw new Error(
-        `Error occurred while getting store, anchor node [${anchorId}] does not exist.`
-      );
-    }
-    let node;
-    if (nodeName == "$") {
-      node = anchorNode;
-    } else {
-      let nodeId = anchorNode.nameDict[nodeName];
-      if (nodeId == null) {
-        throw new Error(
-          `Error occurred while getting store, parent node with name [${nodeName}] does not exist.`
-        );
-      }
-      node = this._nodeDict[nodeId];
-      if (node == null) {
-        throw new Error(
-          `Error occurred while getting store, node [${nodeId}] does not exist.`
-        );
-      }
-    }
-    return node.ref.getStoreEntity(storeName);
   }
 
   getNode(nodeId: string) {

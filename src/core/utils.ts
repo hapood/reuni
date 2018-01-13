@@ -7,7 +7,7 @@ import Task from "../api/TaskDescriptor";
 import { tKey, asKey } from "../api/TaskDescriptor";
 import TaskStatus from "../api/TaskStatus";
 import Reuni from "src/core/Reuni";
-import NodeItem from "./Node";
+import Node from "./Node";
 import TaskCancelError from "../api/TaskCancelError";
 import StoreNotExistError from "../api/StoreNotExistError";
 import StoreNotAvailableError from "../api/StoreNotAvailableError";
@@ -277,13 +277,13 @@ export function storeObserveMatch(
 
 export function buildNodeNameDict(node: {
   id: string;
-  symbol: symbol;
+  thread: symbol;
   name?: string;
-  parent?: NodeItem | undefined | null;
+  parent?: Node | undefined | null;
 }): NodeNameDict {
   let oldNameDict,
     parentNode = node.parent,
-    threadSymbol = node.symbol,
+    threadSymbol = node.thread,
     nodeName = node.name;
   if (parentNode != null) {
     oldNameDict = parentNode.getNameDict();
@@ -317,13 +317,13 @@ export function buildNodeNameDict(node: {
 
 export function buildNodeThreadDict(node: {
   id: string;
-  symbol: symbol;
+  thread: symbol;
   name?: string;
-  parent?: NodeItem | undefined | null;
+  parent?: Node | undefined | null;
 }): NodeThreadDict {
   let oldThreads,
     parentNode = node.parent,
-    threadSymbol = node.symbol;
+    threadSymbol = node.thread;
   if (parentNode != null) {
     oldThreads = parentNode.getThreadDict();
   } else {
