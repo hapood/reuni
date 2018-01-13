@@ -271,7 +271,7 @@ export function storeObserveMatch(
   dirtyKeys: Record<string, boolean>,
   keyObserve: KeyCareItem
 ) {
-  switch (keyObserve.observeType) {
+  switch (keyObserve.type) {
     case ObserveType.ALL:
       return true;
     case ObserveType.INCLUDE:

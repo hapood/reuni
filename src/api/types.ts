@@ -1,14 +1,17 @@
 import ObserveType from "./ObserveType";
+import { KeyCareItem } from "../core/types";
 
-export type KeyCare = {
-  observeType: ObserveType;
-  keys: string[];
+export type ObserverCareThread = {
+  parent: number;
+  store: KeyCareItem;
 };
 
-export type StoreCare = {
-  [storeName: string]: KeyCare;
+export type ObserverCareName = {
+  name: string;
+  store: KeyCareItem;
 };
 
-export type ObserverCare = {
-  [nodeId: string]: StoreCare;
-};
+export type NodeCareCategory={
+  name: ObserverCareName[];
+  thread: ObserverCareThread[];
+}

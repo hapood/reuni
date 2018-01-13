@@ -41,7 +41,7 @@ export type Observer = {
 };
 
 export type KeyCareItem = {
-  observeType: ObserveType;
+  type: ObserveType;
   keys: string[];
 };
 

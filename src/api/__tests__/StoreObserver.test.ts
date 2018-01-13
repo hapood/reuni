@@ -1,16 +1,10 @@
-import { StoreObserver } from "src";
+import { storeObserver } from "src";
 
 it("tests StoreObserver", () => {
-  let storeObserver = new StoreObserver(
-    ({ storeInclude, storeExclude, store3 }) => {
-      storeInclude.includes(["keyInclude"]);
-      storeExclude.excludes(["keyExclude"]);
-    }
-  )
-    .byName("parent", ({ parentStore }) => {
-      parentStore.includes(["key"]);
-    })
-    .byThread(-2, ({ threadStore }) => {
-      threadStore.excludes(["key"]).inject();
-    });
+  let observer = storeObserver(({ storeInclude, storeExclude, store3 }) => {
+    storeInclude.includes(["keyInclude"]);
+    storeExclude.excludes(["keyExclude"]);
+  })
+    .byName("parent", ({ parentStore }) => {})
+    .byThread(-2, ({ threadStore }) => {});
 });
