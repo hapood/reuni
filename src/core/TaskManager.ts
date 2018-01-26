@@ -1,6 +1,6 @@
 import { TaskItem } from "./types";
 import { genId } from "./utils";
-import Task from "../api/TaskDescriptor";
+import TaskHandler from "../api/TaskHandler";
 import TaskStatus from "../api/TaskStatus";
 
 export default class TaskManager {
@@ -10,7 +10,7 @@ export default class TaskManager {
     this.taskDict = {};
   }
 
-  startTask(): Task {
+  startTask(): TaskHandler {
     let tranId;
     while (tranId == null) {
       tranId = genId();
@@ -25,7 +25,7 @@ export default class TaskManager {
       observers: []
     };
     this.taskDict[tranId] = taskItem;
-    return new Task(taskItem, this);
+    return new TaskHandler(taskItem, this);
   }
 
   cancelTans(transId: string) {

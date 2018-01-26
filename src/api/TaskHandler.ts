@@ -4,9 +4,9 @@ import TaskStatus from "./TaskStatus";
 
 export const tKey = Symbol("tid");
 
-export const asKey = Symbol("arenaStore");
+export const ruKey = Symbol("reuni");
 
-export default class Task {
+export default class TaskHandler {
   private taskItem: TaskItem;
   private taskManager: TaskManager;
 

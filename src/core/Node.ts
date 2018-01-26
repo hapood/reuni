@@ -1,7 +1,6 @@
 ﻿import Store from "./Store";
 import TaskManager from "../core/TaskManager";
 import Reuni from "./Reuni";
-import { ObserverCare } from "../api/types";
 import {
   Observer,
   ObserverCareDict,
@@ -9,24 +8,26 @@ import {
   NodeThreadDict
 } from "./types";
 import { buildNodeNameDict, buildNodeThreadDict } from "./utils";
+import { nodeCareParser } from "../api/utils";
 
 export default class Node {
   private _id: string;
   private _name: string;
   private _parent: Node | undefined | null;
+  private _observers: Observer[];
   private _children: Record<string, Node>;
   private _stores: Record<string, Store>;
   private _dirtyStores: Record<string, boolean>;
   private _dirtyStoreKeys: Record<string, Record<string, boolean>>;
   private _dirtyNodes: Record<string, boolean>;
   private _isDestroyed: boolean;
-  private _arenaStore: Reuni;
+  private _reuni: Reuni;
   private _nameDict: NodeNameDict;
   private _threadDict: NodeThreadDict;
   private _thread: symbol;
 
   constructor(
-    arenaStore: Reuni,
+    reuni: Reuni,
     node: {
       id: string;
       thread: symbol;
@@ -42,8 +43,9 @@ export default class Node {
     this._dirtyNodes = {};
     this._dirtyStores = {};
     this._dirtyStoreKeys = {};
+    this._observers = [];
     this._isDestroyed = false;
-    this._arenaStore = arenaStore;
+    this._reuni = reuni;
     this._nameDict = buildNodeNameDict(node);
     this._threadDict = buildNodeThreadDict(node);
     this._thread = node.thread;
@@ -76,23 +78,29 @@ export default class Node {
   getNodeNameDict() {
     return this._nameDict;
   }
-  destroy(): null | string[] {
-    let observers: Observer[] = [];
+
+  destroy(): [string[], Observer[], Observer[]] {
+    let nodeObs: Observer[] = this._observers;
+    let storeObs: Observer[] = [];
     Object.values(this._stores).forEach(store => {
-      observers.push(store.getObserver());
+      storeObs.push(store.getObserver());
       store.destroy();
     });
-    let nodeKeys = Object.keys(this._children);
-    let keys = Object.entries(this._children)
+    let keys = Object.keys(this._children);
+    [keys, nodeObs, storeObs] = Object.entries(this._children)
       .map(([key, child]) => child.destroy())
       .reduce(
-        (prev, cur) => (cur == null ? prev : (prev as string[]).concat(cur)),
-        nodeKeys
+        (prev, cur) => [
+          prev[0].concat(cur[0]),
+          prev[1].concat(cur[1]),
+          prev[2].concat(cur[2])
+        ],
+        [keys, nodeObs, storeObs]
       );
     this._stores = {};
     this._children = {};
     this._isDestroyed = true;
-    return keys;
+    return [keys, nodeObs, storeObs];
   }
 
   commit() {
@@ -106,7 +114,7 @@ export default class Node {
     this._dirtyNodes = {};
     this._dirtyStores = {};
     this._dirtyStoreKeys = {};
-    this._arenaStore.updateDirtyNode(this._id, dirtyStores);
+    this._reuni.updateDirtyNode(this._id, dirtyStores);
   }
 
   addDirtyStores(storeName: string) {
@@ -126,7 +134,8 @@ export default class Node {
 
   addStore<S extends Record<string, {}>, A>(
     storeName: string,
-    RawStore: new () => any
+    RawStore: new () => any,
+    observer: ObserverCareDict
   ) {
     if (this._stores[storeName] != null) {
       throw new Error(
@@ -135,9 +144,18 @@ export default class Node {
         }], store [${storeName}] already exist.`
       );
     }
-    let store = new Store(storeName, RawStore, this);
+    let store = new Store(storeName, RawStore, observer, this);
     this._stores[storeName] = store;
     return store;
+  }
+
+  observe(
+    care: ObserverCareDict,
+    cb: (isValid: boolean, storeDict?: Record<string, any>) => void
+  ) {
+    let curObserver: Observer = { care, cb };
+    this._observers.push(curObserver);
+    return curObserver;
   }
 
   deleteStore(storeName: string) {
@@ -184,7 +202,7 @@ export default class Node {
   }
 
   getTaskManager() {
-    return this._arenaStore.getTaskManager();
+    return this._reuni.getTaskManager();
   }
 
   getStores() {
@@ -195,33 +213,15 @@ export default class Node {
     return this._stores;
   }
 
-  getArenaStore() {
-    return this._arenaStore;
+  getReuni() {
+    return this._reuni;
   }
 
-  observe(care: ObserverCare, cb: (isValid: boolean) => void) {
-    let newCare: ObserverCareDict = {};
-    let observer = this._arenaStore.observe(care, cb);
-    return observer;
-  }
-
-  getStoreEntity(storeName: string) {
+  findStoreEntity(storeName: string) {
     let store = this._stores[storeName];
-    if (store == null) {
-      throw new Error(
-        `Error occurred while getting store, store [${storeName}] does not exist in node [${
-          this._id
-        }].`
-      );
+    if (store != null) {
+      return store.getEntity();
     }
-    return store.getEntity();
-  }
-
-  findNodeSE(storeName: string, nodeName: string) {
-    return this._arenaStore.getStoreEntity(this._id, nodeName, storeName);
-  }
-
-  findThreadSE(storeName: string, level: number = 0) {
-    return this._arenaStore.getStoreEntity(this._id, nodeName, storeName);
+    return null;
   }
 }

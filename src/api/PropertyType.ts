@@ -1,5 +1,5 @@
 enum PropertyType {
-  OBSERVABLE,
+  VALUE,
   TASK,
   ASYNC_TASK,
   STORE

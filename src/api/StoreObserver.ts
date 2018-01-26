@@ -5,6 +5,7 @@ import { KeyCareItem } from "../core/types";
 export type StoreRename = {
   (name: string): void;
 };
+
 export type StoreObserveOptions = {
   includes: (keys: string[]) => { rename: StoreRename };
   excludes: (keys: string[]) => { rename: StoreRename };
@@ -69,11 +70,13 @@ export default class StoreObserver {
         }
       };
     if (storeGetter != null) {
-      {
-        storeGetter(new Proxy(target, handler) as any);
-      }
+      storeGetter(new Proxy(target, handler) as any);
     }
     this._careCate = target;
+  }
+
+  getCareCate() {
+    return this._careCate;
   }
 
   byName(nodeName: string, storeGetter: StoreGetter) {
@@ -90,9 +93,7 @@ export default class StoreObserver {
       }
     };
     if (storeGetter != null) {
-      {
-        storeGetter(new Proxy(this._careCate, handler) as any);
-      }
+      storeGetter(new Proxy(this._careCate, handler) as any);
     }
     return this;
   }

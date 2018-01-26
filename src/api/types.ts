@@ -19,3 +19,7 @@ export type NodeCareCategory = {
   names: NameStoreCare[];
   threads: ThreadStoreCare[];
 };
+
+export type InjectSource = {
+  [storeName: string]: {};
+};

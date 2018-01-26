@@ -36,12 +36,13 @@ export type NodeItem = {
 
 export type Observer = {
   care: ObserverCareDict;
-  cb: (isValid: boolean) => void;
+  cb: (isValid: boolean, storeDict?: any) => void;
 };
 
 export type KeyCareItem = {
   type: ObserveType;
   keys: string[];
+  rename?: string;
 };
 
 export type StoreCareDict = {

@@ -1,56 +1,53 @@
 import Node from "./Node";
-import { buildStoreEntity, taskProxy, asyncTaskProxy } from "./utils";
+import {
+  buildStoreEntity,
+  taskProxy,
+  asyncTaskProxy,
+  buildTaskEntity,
+  buildStoreDict
+} from "./utils";
 import TaskManager from "./TaskManager";
-import Task from "../api/TaskDescriptor";
-import { TaskDict, Observer } from "./types";
+import TaskHandler from "../api/TaskHandler";
+import { TaskDict, Observer, ObserverCareDict } from "./types";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
 import { getCache } from "../api/decorator";
 import Reuni from "src/core/Reuni";
-import { DecoratorValue as StoreDecoratorValue } from "../api/store";
 
 export default class Store {
   private _name: string;
-  private _stateDict: Record<string, true>;
+  private _valueDict: Record<string, true>;
   private _committedState: any;
   private _state: any;
   private _isDestroyed: boolean;
   private _taskDict: TaskDict;
   private _node: Node;
   private _entity: any;
-  private _taskDesrDict: Record<string, Record<string, Task>>;
+  private _taskDesrDict: Record<string, Record<string, TaskHandler>>;
   private _isValid: boolean;
   private _observer: Observer;
-  private _storeDict: Record<
-    string,
-    {
-      node: string;
-      store: string;
-    }
-  >;
+  private _storeDict: Record<string, any>;
 
-  constructor(storeName: string, RawStore: new () => any, node: Node) {
+  constructor(
+    storeName: string,
+    RawStore: new () => any,
+    observer: ObserverCareDict,
+    node: Node
+  ) {
     this._name = storeName;
     let taskDict: TaskDict = {};
-    let stateDict: Record<string, true> = {};
+    let valueDict: Record<string, true> = {};
     let state: any = {};
     let rawStore: any = new RawStore();
     let propertyDict = getCache(RawStore.prototype);
     let taskManager = node.getTaskManager();
-    let taskDesrDict: Record<string, Record<string, Task>> = {};
+    let taskDesrDict: Record<string, Record<string, TaskHandler>> = {};
     let tmpTask;
-    let storeDict: Record<
-      string,
-      {
-        node: string;
-        store: string;
-      }
-    > = {};
+    let storeDict: Record<string, any> = {};
     Object.entries(propertyDict).forEach(([key, item]) => {
       switch (item.type) {
-        case PropertyType.OBSERVABLE:
-          taskDesrDict[key] = {};
-          stateDict[key] = true;
+        case PropertyType.VALUE:
+          valueDict[key] = true;
           state[key] = rawStore[key];
           break;
         case PropertyType.TASK:
@@ -70,37 +67,38 @@ export default class Store {
           };
           break;
         case PropertyType.STORE:
-          let value = item.value as StoreDecoratorValue;
-          let careStores = observeDict[value.node];
-          if (observeDict[value.node] == null) {
-            careStores = {};
-            observeDict[value.node] = careStores;
-          }
-          careStores[value.store] = {
-            observeType: value.observeType,
-            keys: value.keys
-          };
-          storeDict[key] = value;
+          storeDict[key] = null;
           break;
       }
     });
-    this._stateDict = stateDict;
+    this._valueDict = valueDict;
     this._committedState = state;
     this._state = Object.assign({}, state);
     this._taskDesrDict = taskDesrDict;
     this._taskDict = taskDict;
     this._isDestroyed = false;
     this._node = node;
-    this._observer = node.observe(observeDict, isValid => {
-      this.setIsValid(isValid);
-    });
     this._storeDict = storeDict;
-    this._entity = buildStoreEntity(
-      this,
-      state,
-      stateDict,
-      node.getArenaStore()
-    );
+    this._observer = node
+      .getReuni()
+      .storeObserve(observer, (isValid, entityDict) => {
+        this.setIsValid(isValid);
+        if (this._isValid == false && isValid !== false) {
+          let newStoreDict = buildStoreDict(
+            this._observer.care,
+            this._node.getReuni()
+          );
+          Object.keys(this._storeDict).forEach(key => {
+            this._storeDict[key] = (entityDict as any)[key];
+          });
+        }
+        if (isValid !== false) {
+          Object.keys(this._storeDict).forEach(key => {
+            this._state[key] = (entityDict as any)[key];
+          });
+        }
+      });
+    this._entity = buildStoreEntity(this, state, valueDict, node.getReuni());
     this._isValid = false;
   }
 
@@ -124,7 +122,7 @@ export default class Store {
     return this._isValid;
   }
 
-  addTask(taskName: string, t: Task) {
+  addTask(taskName: string, t: TaskHandler) {
     let taskDescriptors = this._taskDesrDict[taskName];
     if (taskDescriptors == null) {
       throw new Error(
@@ -137,8 +135,8 @@ export default class Store {
     return t;
   }
 
-  getStateDict() {
-    return this._stateDict;
+  getValueDict() {
+    return this._valueDict;
   }
 
   getNode() {
@@ -198,8 +196,8 @@ export default class Store {
     this._entity = buildStoreEntity(
       this,
       this._state,
-      this._stateDict,
-      this._node.getArenaStore()
+      this._valueDict,
+      this._node.getReuni()
     );
     let oldKeys = Object.keys(this._committedState);
     let newKeys = Object.keys(this._state);
@@ -212,5 +210,9 @@ export default class Store {
     this._committedState = this._state;
     this._state = Object.assign({}, this._state);
     this._node.updateDirtyStore(this._name, dirtyKeyDict);
+  }
+
+  getTaskEntity(t: TaskHandler) {
+    return buildTaskEntity(this, this._node.getReuni(), t);
   }
 }
