@@ -281,13 +281,18 @@ export default class Reuni {
     return nodeItem.ref;
   }
 
-  getStore(nodeId: string, nodeName: string) {
+  getEntity(nodeId: string, storeName: string) {
     let nodeItem = this._nodeDict[nodeId];
-    return nodeItem.ref.findStoreEntity(nodeName);
+    return nodeItem.ref.getEntity(storeName);
+  }
+
+  getStore(nodeId: string, storeName: string) {
+    let nodeItem = this._nodeDict[nodeId];
+    return nodeItem.ref.getStore(storeName);
   }
 
   buildTaskEntity(nodeId: string, nodeName: string, t: TaskHandler) {
-    return this.getStore(nodeId, nodeName).buildTaskEntity();
+    return this.getEntity(nodeId, nodeName).buildTaskEntity();
   }
 }
 

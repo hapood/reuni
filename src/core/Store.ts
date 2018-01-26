@@ -26,7 +26,7 @@ export default class Store {
   private _taskDesrDict: Record<string, Record<string, TaskHandler>>;
   private _isValid: boolean;
   private _observer: Observer;
-  private _storeDict: Record<string, any>;
+  private _storeDict: Record<string, Store>;
 
   constructor(
     storeName: string,
@@ -212,7 +212,7 @@ export default class Store {
     this._node.updateDirtyStore(this._name, dirtyKeyDict);
   }
 
-  getTaskEntity(t: TaskHandler) {
+  getTaskEntity(t: TaskHandler): any {
     return buildTaskEntity(this, this._node.getReuni(), t);
   }
 }

@@ -217,11 +217,11 @@ export default class Node {
     return this._reuni;
   }
 
-  findStoreEntity(storeName: string) {
-    let store = this._stores[storeName];
-    if (store != null) {
-      return store.getEntity();
-    }
-    return null;
+  getEntity(storeName: string) {
+    return this._stores[storeName].getEntity();
+  }
+
+  getStore(storeName: string) {
+    return this._stores[storeName];
   }
 }

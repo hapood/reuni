@@ -2,7 +2,6 @@ import Store from "../core/Store";
 import TaskManager from "../core/TaskManager";
 import Node from "../core/Node";
 import Reuni from "../core/Reuni";
-import ObserveType from "../api/ObserveType";
 import StoreObserver from "./StoreObserver";
 import { nodeCareParser } from "./utils";
 

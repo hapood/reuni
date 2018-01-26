@@ -93,12 +93,11 @@ export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
             t
           );
         }
-        let storeDict = target.getStoreDict();
         return null;
       }
-      let storeDict = target.getStoreDict();
-      if (storeDict[name] != null) {
-        return state[name];
+      let innerStore = target.getStoreDict()[name];
+      if (innerStore != null) {
+        return innerStore.getTaskEntity(t);
       }
       if (name === tKey) {
         return t;
@@ -356,7 +355,7 @@ export function buildEntityDict(careDict: ObserverCareDict, reuni: Reuni) {
   let dict: any = {};
   Object.entries(careDict).forEach(([nodeId, storeCareDict]) => {
     Object.entries(storeCareDict).map(([storeName, careItem]) => {
-      dict[careItem.rename || storeName] = reuni.getStore(nodeId, storeName);
+      dict[careItem.rename || storeName] = reuni.getEntity(nodeId, storeName);
     });
   });
   return dict;
