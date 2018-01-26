@@ -98,7 +98,7 @@ export default class StoreObserver {
     return this;
   }
 
-  byThread(parent: number, storeGetter: StoreGetter) {
+  byThread(storeGetter: StoreGetter, parent: number = 1) {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
         let [proxy, keyCareItem, newName] = createStoreProxy();
