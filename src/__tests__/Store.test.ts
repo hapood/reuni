@@ -53,7 +53,6 @@ it("Store works with cancel", done => {
     storeObserver(({ monoStore }) => {}),
     (isValid: boolean, entityDict: any) => {
       let store: MonoStore = entityDict.monoStore;
-      console.log(store.cnt, cbId);
       switch (cbId) {
         case 0:
           cbId++;

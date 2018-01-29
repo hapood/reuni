@@ -214,7 +214,6 @@ export default class Store {
     });
     this._committedState = this._state;
     this._state = Object.assign({}, this._state);
-    console.log("commited", this._state);
     this._node.updateDirtyStore(this._name, dirtyKeyDict);
   }
 

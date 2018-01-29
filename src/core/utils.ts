@@ -76,7 +76,6 @@ export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
       if (taskDict[name] != null) {
         if (t.isCanceled() !== true && t.isDone() !== true) {
           if (taskDict[name].type === PropertyType.ASYNC_TASK) {
-            console.log("commit", name);
             reuni.commit();
           }
           return taskRelayProxy.bind(
@@ -241,7 +240,6 @@ export function asyncTaskProxy(
     let tid = t.getId();
     taskManager.finishTask(tid);
     store.deleteTask(taskName, tid);
-    console.log("done commit");
     reuni.commit();
   });
   (r as any)[tKey] = t;
@@ -427,7 +425,7 @@ export function isCareStoreValid(
     let storeNames = Object.keys(storeCareDict);
     for (let i = 0; i < storeNames.length; i++) {
       let storeObj = storeValid[storeNames[i]];
-      if (storeObj != null && storeObj.isValid() !== true) {
+      if (storeObj == null || storeObj.isValid() !== true) {
         isCb = false;
         break;
       }

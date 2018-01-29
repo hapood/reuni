@@ -145,7 +145,9 @@ export default class Node {
         }], store [${storeName}] already exist.`
       );
     }
+    console.log("adding store")
     let store = new Store(storeName, RawStore, observer, this);
+    console.log("store added")
     this._stores[storeName] = store;
     return store;
   }
@@ -216,6 +218,7 @@ export default class Node {
   }
 
   getEntity(storeName: string) {
+    console.log(storeName)
     return this._stores[storeName].getEntity();
   }
 

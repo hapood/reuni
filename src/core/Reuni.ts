@@ -128,12 +128,13 @@ export default class Reuni {
         `Error occurred while adding store, node [${nodeId}] does not exist.`
       );
     }
-    let store = node.ref.addStore(storeName, RawStore, observer);
     let storeValidDict = this._storeValidDict[nodeId];
     if (storeValidDict == null) {
       storeValidDict = {};
       this._storeValidDict[nodeId] = storeValidDict;
     }
+    console.log("add store", storeName);
+    let store = node.ref.addStore(storeName, RawStore, observer);
     storeValidDict[storeName] = store;
     this._storeObs.forEach(ob => {
       let isCare = isStoreCare(ob.care, nodeId, storeName);
@@ -223,6 +224,7 @@ export default class Reuni {
     this._storeObs.push(curObserver);
     let isCB = isCareStoreValid(care, this._storeValidDict);
     if (isCB !== false) {
+      console.log(isCB, care);
       cb(true, buildEntityDict(care, this));
     }
     return curObserver;
@@ -281,10 +283,6 @@ export default class Reuni {
   getStore(nodeId: string, storeName: string) {
     let nodeItem = this._nodeDict[nodeId];
     return nodeItem.ref.getStore(storeName);
-  }
-
-  buildTaskEntity(nodeId: string, nodeName: string, t: TaskHandler) {
-    return this.getEntity(nodeId, nodeName).buildTaskEntity();
   }
 }
 
