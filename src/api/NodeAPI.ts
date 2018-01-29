@@ -4,6 +4,7 @@ import Node from "../core/Node";
 import Reuni from "../core/Reuni";
 import StoreObserver from "./StoreObserver";
 import { nodeCareParser } from "./utils";
+import { ObserverCB } from "./types";
 
 function printInvalidWarn() {
   console.warn("Node has been unmounted.");
@@ -33,7 +34,7 @@ export default class NodeAPI {
     return this._nodeItem.isDestroyed();
   }
 
-  observe(observer: StoreObserver, cb: (isValid: boolean) => void) {
+  observe(observer: StoreObserver, cb: ObserverCB) {
     if (this._nodeItem.isDestroyed() !== true) {
       let care = observer.getCareCate();
       let careDict = nodeCareParser(care, this._nodeItem);

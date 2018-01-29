@@ -5,13 +5,13 @@ export type ThreadStoreCare = {
   parent: number;
   store: KeyCareItem;
   name: string;
-  rename: string;
+  rename: string | null | undefined;
 };
 
 export type NameStoreCare = {
   nodeName: string;
   name: string;
-  rename: string;
+  rename: string | null | undefined;
   store: KeyCareItem;
 };
 
@@ -22,4 +22,8 @@ export type NodeCareCategory = {
 
 export type InjectSource = {
   [storeName: string]: {};
+};
+
+export type ObserverCB = {
+  (isValid: boolean, entityDict?: Record<string, any>): void;
 };

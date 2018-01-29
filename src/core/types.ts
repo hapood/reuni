@@ -3,6 +3,7 @@ import Node from "./Node";
 import TaskStatus from "../api/TaskStatus";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
+import { ObserverCB } from "../api/types";
 
 export type NodeDictItem = {
   path: string[];
@@ -36,13 +37,13 @@ export type NodeItem = {
 
 export type Observer = {
   care: ObserverCareDict;
-  cb: (isValid: boolean, storeDict?: any) => void;
+  cb: ObserverCB;
 };
 
 export type KeyCareItem = {
   type: ObserveType;
   keys: string[];
-  rename?: string;
+  rename: string | null | undefined;
 };
 
 export type StoreCareDict = {

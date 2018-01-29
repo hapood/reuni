@@ -1,8 +1,8 @@
-import { observable, task, store } from "src";
+import { task, store } from "src";
 import MonoStore from "./MonoStore";
 
 export default class MixedStore {
-  @store("monoStore") monoStore: MonoStore;
+  @store monoStore: MonoStore;
 
   @task
   callOtherStore() {

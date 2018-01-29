@@ -1,4 +1,4 @@
-import { storeObserver, createReuni, value, store } from "src";
+import { storeObserver, createReuni, value, store, NodeAPI } from "src";
 
 class MockStore {
   @value keyInclude = "";
@@ -15,10 +15,15 @@ it("tests StoreObserver", () => {
       parentStore.rename("father");
     })
     .byThread(({ threadStore }) => {});
-  let arenaSotre = createReuni();
+  let reuni = createReuni();
   let thread = Symbol("thread1");
-  let node1 = arenaSotre.mountNode({ thread, name: "parent" });
-  node1.addStore("parentStore", MockStore).addStore("parentStore", MockStore);
-  let node2 = arenaSotre.mountNode({ thread });
-  node1.observe(observer, () => null);
+  let node1 = reuni.mountNode({ thread, name: "parent" });
+  node1.addStore("parentStore", MockStore).addStore("threadStore", MockStore);
+  let node1_1 = reuni.mountNode({ thread, parentId: node1.getId() });
+  node1_1
+    .addStore("storeInclude", MockStore)
+    .addStore("storeExclude", MockStore)
+    .addStore("store", MockStore);
+  node1_1.observe(observer, () => null);
+  expect(node1_1).toBeInstanceOf(NodeAPI);
 });

@@ -9,6 +9,7 @@ import {
 } from "./types";
 import { buildNodeNameDict, buildNodeThreadDict } from "./utils";
 import { nodeCareParser } from "../api/utils";
+import { ObserverCB } from "../api/types";
 
 export default class Node {
   private _id: string;
@@ -149,10 +150,7 @@ export default class Node {
     return store;
   }
 
-  observe(
-    care: ObserverCareDict,
-    cb: (isValid: boolean, storeDict?: Record<string, any>) => void
-  ) {
+  observe(care: ObserverCareDict, cb: ObserverCB) {
     let curObserver: Observer = { care, cb };
     this._observers.push(curObserver);
     return curObserver;
@@ -172,7 +170,7 @@ export default class Node {
     return store;
   }
 
-  mountChild(id: string, node: Node) {
+  addChild(id: string, node: Node) {
     if (this._children[id] != null) {
       throw new Error(
         `Error occurred while mounting node [${
@@ -184,7 +182,7 @@ export default class Node {
     return node;
   }
 
-  unmountChild(nodeId: string) {
+  deleteChild(nodeId: string) {
     let child = this._children[nodeId];
     if (child == null) {
       throw new Error(

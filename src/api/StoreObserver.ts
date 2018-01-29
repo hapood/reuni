@@ -16,23 +16,20 @@ export type StoreGetter = (
   storeOptions: Record<string, StoreObserveOptions>
 ) => void;
 
-function createStoreProxy(): [
-  StoreObserveOptions,
-  KeyCareItem,
-  string | undefined | null
-] {
+function createStoreProxy(): [StoreObserveOptions, KeyCareItem] {
   let target: KeyCareItem = {
       type: ObserveType.ALL,
-      keys: []
+      keys: [],
+      rename: null
     },
-    newName: string | undefined | null,
     handler = {
       get: function(target: KeyCareItem, name: string) {
         let setRename = (rename: string) => {
-          newName = rename;
+          target.rename = rename;
         };
         let setKeys: any = (keys: string[]) => {
           target.keys = keys;
+          return { rename: setRename };
         };
         setKeys.rename = setRename;
         switch (name) {
@@ -49,7 +46,7 @@ function createStoreProxy(): [
         return null;
       }
     };
-  return [new Proxy(target, handler) as any, target, newName];
+  return [new Proxy(target, handler) as any, target];
 }
 
 export default class StoreObserver {
@@ -59,12 +56,12 @@ export default class StoreObserver {
     let target: NodeCareCategory = { names: [], threads: [] },
       handler = {
         get: function(target: NodeCareCategory, name: string) {
-          let [proxy, keyCareItem, newName] = createStoreProxy();
+          let [proxy, keyCareItem] = createStoreProxy();
           target.threads.push({
             name,
             parent: 0,
             store: keyCareItem,
-            rename: newName == null ? name : newName
+            rename: keyCareItem.rename || name
           });
           return proxy;
         }
@@ -82,12 +79,12 @@ export default class StoreObserver {
   byName(nodeName: string, storeGetter: StoreGetter) {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
-        let [proxy, keyCareItem, newName] = createStoreProxy();
+        let [proxy, keyCareItem] = createStoreProxy();
         target.names.push({
           name,
           nodeName,
           store: keyCareItem,
-          rename: newName == null ? name : newName
+          rename: keyCareItem.rename || name
         });
         return proxy;
       }
@@ -101,12 +98,12 @@ export default class StoreObserver {
   byThread(storeGetter: StoreGetter, parent: number = 1) {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
-        let [proxy, keyCareItem, newName] = createStoreProxy();
+        let [proxy, keyCareItem] = createStoreProxy();
         target.threads.push({
           name,
           parent,
           store: keyCareItem,
-          rename: newName == null ? name : newName
+          rename: keyCareItem.rename || name
         });
         return proxy;
       }

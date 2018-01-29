@@ -1,58 +1,71 @@
-import { createReuni, Node, getTaskDescriptor, ObserveType } from "src";
+import { createReuni, Node, getTaskDescriptor, storeObserver } from "src";
 import MonoStore from "./MonoStore";
 
 it("Store works with observe", done => {
-  let arenaSotre = createReuni();
-  let node1 = arenaSotre.mountNode(null, "node1");
-  let storeName = node1.addStore("monoStore", MonoStore) as string;
+  let thread = Symbol("thread");
+  let reuni = createReuni();
+  let node1 = reuni.mountNode({ thread });
+  node1.addStore("monoStore", MonoStore);
   let cbId = 0;
   node1.observe(
-    {
-      $: {
-        [storeName]: { observeType: ObserveType.INCLUDE, keys: ["cnt"] }
-      }
-    },
-    (isValid: boolean) => {
-      let store: MonoStore =
-        isValid == true ? node1.findStore(storeName) : null;
+    storeObserver(({ monoStore }) => {
+      monoStore.includes(["cnt"]);
+    }),
+    (isValid: boolean, entityDict: any) => {
+      let store: MonoStore = isValid == true ? entityDict.monoStore : null;
       switch (cbId) {
         case 0:
-          expect(store.cnt).toBe(10);
           cbId++;
+          expect(isValid).toBe(true);
+          expect(store.cnt).toBe(0);
+          store.task().then(() => node1.deleteStore("monoStore"));
           break;
         case 1:
-          expect(store.cnt).toBe(30);
           cbId++;
+          expect(isValid).toBe(true);
+          expect(store.cnt).toBe(10);
           break;
+
         case 2:
+          cbId++;
+          expect(isValid).toBe(true);
+          expect(store.cnt).toBe(30);
+          break;
+        case 3:
           expect(isValid).toBe(false);
           done();
+          break;
       }
     }
   );
-  let store: MonoStore = node1.findStore(storeName);
-  let t = store.task();
-  t.then(() => node1.deleteStore(storeName));
 });
 
 it("Store works with cancel", done => {
-  let arenaSotre = createReuni();
-  let node1 = arenaSotre.mountNode(null, "node1");
-  let storeName = node1.addStore("MonoStore", MonoStore) as string;
+  let thread = Symbol("thread");
+  let reuni = createReuni();
+  let node1 = reuni.mountNode({ thread });
+  let cbId = 0;
+  node1.addStore("monoStore", MonoStore);
   node1.observe(
-    {
-      $: {
-        [storeName]: { observeType: ObserveType.INCLUDE, keys: ["cnt"] }
+    storeObserver(({ monoStore }) => {}),
+    (isValid: boolean, entityDict: any) => {
+      let store: MonoStore = isValid == true ? entityDict.monoStore : null;
+      switch (cbId) {
+        case 0:
+          cbId++;
+          expect(isValid).toBe(true);
+          expect(store.cnt).toBe(0);
+          let t = store.cancelable();
+          getTaskDescriptor(t).cancel();
+          store.addAsync(2);
+          break;
+        case 1:
+          cbId++;
+          expect(isValid).toBe(true);
+          expect(store.cnt).toBe(2);
+          done();
+          break;
       }
-    },
-    (isValid: boolean) => {
-      let store: MonoStore = node1.findStore(storeName);
-      expect(store.cnt).toBe(2);
-      done();
     }
   );
-  let store: MonoStore = node1.findStore(storeName);
-  let t = store.cancelable();
-  let task = getTaskDescriptor(t).cancel();
-  store.addAsync(2);
 });

@@ -13,6 +13,7 @@ import NodeAPI from "../api/NodeAPI";
 import TaskManager from "./TaskManager";
 import Node from "./Node";
 import TaskHandler from "src/api/TaskHandler";
+import { ObserverCB } from "../api/types";
 
 export default class Reuni {
   private _nodeDict: NodeDict;
@@ -97,6 +98,7 @@ export default class Reuni {
     let newNode = new Node(this, {
       id: newNodeId,
       thread: node.thread,
+      name: nodeName,
       parent: pNode.ref
     });
     nodePath = pNode.path.concat(newNodeId);
@@ -104,7 +106,7 @@ export default class Reuni {
       path: nodePath,
       ref: newNode
     };
-    pNode.ref.mountChild(newNodeId, newNode);
+    pNode.ref.addChild(newNodeId, newNode);
     return new NodeAPI(newNode);
   }
 
@@ -207,7 +209,7 @@ export default class Reuni {
     let [nodeKeys, nodeObs, storeObs] = node.ref.destroy();
     let parent = node.ref.getParent();
     if (parent != null) {
-      parent.unmountChild(nodeId);
+      parent.deleteChild(nodeId);
     }
     nodeKeys.forEach(key => {
       delete this._nodeDict[key];
@@ -220,19 +222,13 @@ export default class Reuni {
     return node.ref;
   }
 
-  observe(
-    care: ObserverCareDict,
-    cb: (isValid: boolean, storeDict?: Record<string, any>) => void
-  ) {
+  observe(care: ObserverCareDict, cb: ObserverCB) {
     let curObserver: Observer = { care, cb };
     this._observers.push(curObserver);
     return curObserver;
   }
 
-  storeObserve(
-    care: ObserverCareDict,
-    cb: (isValid: boolean, storeDict?: Record<string, any>) => void
-  ) {
+  storeObserve(care: ObserverCareDict, cb: ObserverCB) {
     let curObserver: Observer = { care, cb };
     this._storeObs.push(curObserver);
     return curObserver;
