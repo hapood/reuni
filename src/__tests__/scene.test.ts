@@ -12,7 +12,10 @@ it("Store works with observe", done => {
       monoStore.includes(["cnt"]);
     }),
     (isValid: boolean, entityDict: any) => {
-      let store: MonoStore = isValid == true ? entityDict.monoStore : null;
+      let store: MonoStore = null as any;
+      if (isValid !== false) {
+        store = entityDict.monoStore;
+      }
       switch (cbId) {
         case 0:
           cbId++;
@@ -49,7 +52,8 @@ it("Store works with cancel", done => {
   node1.observe(
     storeObserver(({ monoStore }) => {}),
     (isValid: boolean, entityDict: any) => {
-      let store: MonoStore = isValid == true ? entityDict.monoStore : null;
+      let store: MonoStore = entityDict.monoStore;
+      console.log(store.cnt, cbId);
       switch (cbId) {
         case 0:
           cbId++;

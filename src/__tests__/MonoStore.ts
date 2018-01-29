@@ -17,12 +17,14 @@ export default class MonoStore {
   @task.async
   async addAsync(num: number) {
     await delay(100);
+    console.log("addAsync")
     this.cnt += num;
   }
 
   @task.async
   async task() {
     this.add(10);
+    console.log("add 10")
     await this.addAsync(5);
     this.cnt *= 2;
   }
@@ -30,6 +32,7 @@ export default class MonoStore {
   @task.async
   async cancelable() {
     await delay(0);
+    console.log("cancelable")
     this.cnt += 1;
   }
 }

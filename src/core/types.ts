@@ -56,7 +56,7 @@ export type ObserverCareDict = {
 
 export type StoreValidDict = {
   [nodeId: string]: {
-    [storeName: string]: boolean;
+    [storeName: string]: Store;
   };
 };
 

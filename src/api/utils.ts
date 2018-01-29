@@ -41,7 +41,6 @@ export function nodeCareParser(care: NodeCareCategory, node: Node) {
   care.names.forEach(storeOb => {
     let nodeName = storeOb.nodeName;
     let storeName = storeOb.name;
-    console.log(nameDict,storeName)
     let nodeId = nameDict[nodeName].ids[0];
     if (nodeId == null) {
       throw new Error(

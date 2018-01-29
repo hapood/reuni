@@ -61,7 +61,7 @@ export default class StoreObserver {
             name,
             parent: 0,
             store: keyCareItem,
-            rename: keyCareItem.rename || name
+            rename: keyCareItem.rename
           });
           return proxy;
         }
@@ -84,7 +84,7 @@ export default class StoreObserver {
           name,
           nodeName,
           store: keyCareItem,
-          rename: keyCareItem.rename || name
+          rename: keyCareItem.rename
         });
         return proxy;
       }
@@ -103,7 +103,7 @@ export default class StoreObserver {
           name,
           parent,
           store: keyCareItem,
-          rename: keyCareItem.rename || name
+          rename: keyCareItem.rename
         });
         return proxy;
       }

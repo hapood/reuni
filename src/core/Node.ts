@@ -151,7 +151,7 @@ export default class Node {
   }
 
   observe(care: ObserverCareDict, cb: ObserverCB) {
-    let curObserver: Observer = { care, cb };
+    let curObserver = this._reuni.observe(care, cb);
     this._observers.push(curObserver);
     return curObserver;
   }

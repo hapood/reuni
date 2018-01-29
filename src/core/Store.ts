@@ -27,6 +27,7 @@ export default class Store {
   private _isValid: boolean;
   private _observer: Observer;
   private _storeDict: Record<string, Store>;
+  private _entityState: any;
 
   constructor(
     storeName: string,
@@ -79,27 +80,25 @@ export default class Store {
     this._isDestroyed = false;
     this._node = node;
     this._storeDict = storeDict;
+    this._isValid = false;
+    this._entityState = null;
     this._observer = node
       .getReuni()
       .storeObserve(observer, (isValid, entityDict) => {
-        this.setIsValid(isValid);
         if (this._isValid == false && isValid !== false) {
-          let newStoreDict = buildStoreDict(
-            this._observer.care,
-            this._node.getReuni()
-          );
+          let newStoreDict = buildStoreDict(observer, this._node.getReuni());
           Object.keys(this._storeDict).forEach(key => {
-            this._storeDict[key] = (entityDict as any)[key];
+            this._storeDict[key] = newStoreDict[key];
           });
         }
         if (isValid !== false) {
           Object.keys(this._storeDict).forEach(key => {
-            this._state[key] = (entityDict as any)[key];
+            this.setValue(key, (entityDict as any)[key]);
           });
+          this.commit();
         }
+        this.setIsValid(isValid);
       });
-    this._entity = buildStoreEntity(this, state, valueDict, node.getReuni());
-    this._isValid = false;
   }
 
   getObserver() {
@@ -115,6 +114,9 @@ export default class Store {
   }
 
   setIsValid(isValid: boolean) {
+    if (this._isValid !== false && isValid !== true) {
+      this._taskDesrDict = {};
+    }
     this._isValid = isValid;
   }
 
@@ -188,17 +190,20 @@ export default class Store {
     return this._state;
   }
 
+  getCommittedState() {
+    return this._committedState;
+  }
+
   getEntity() {
+    if (this._entityState !== this._committedState) {
+      this._entityState = this._committedState;
+      this._entity = buildStoreEntity(this, this._node.getReuni());
+    }
     return this._entity;
   }
 
   commit() {
-    this._entity = buildStoreEntity(
-      this,
-      this._state,
-      this._valueDict,
-      this._node.getReuni()
-    );
+    this._entity = buildStoreEntity(this, this._node.getReuni());
     let oldKeys = Object.keys(this._committedState);
     let newKeys = Object.keys(this._state);
     let dirtyKeyDict: Record<string, boolean> = {};
@@ -209,6 +214,7 @@ export default class Store {
     });
     this._committedState = this._state;
     this._state = Object.assign({}, this._state);
+    console.log("commited", this._state);
     this._node.updateDirtyStore(this._name, dirtyKeyDict);
   }
 

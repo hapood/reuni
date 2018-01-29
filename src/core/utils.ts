@@ -4,7 +4,7 @@ import {
   NodeNameDict,
   NodeThreadDict,
   ObserverCareDict,
-  Observer
+  StoreValidDict
 } from "./types";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
@@ -27,19 +27,15 @@ export function genId() {
   );
 }
 
-export function buildStoreEntity(
-  store: Store,
-  state: any,
-  valueDict: Record<string, boolean>,
-  reuni: Reuni
-): any {
+export function buildStoreEntity(store: Store, reuni: Reuni): any {
+  let state = store.getCommittedState();
+  let valueDict = store.getValueDict();
+  let taskDict = store.getTaskDict();
   let handler = {
     get: function(target: Store, name: string | symbol) {
-      throwErrorOfStore(target);
       if (valueDict[name] != null) {
         return state[name];
       }
-      let taskDict = target.getTaskDict();
       if (taskDict[name] != null) {
         if (taskDict[name].type === PropertyType.TASK) {
           return taskProxy.bind(null, name, taskDict[name].task, target);
@@ -51,9 +47,6 @@ export function buildStoreEntity(
       if (storeDict[name] != null) {
         return target.getState()[name];
       }
-      throw new Error(
-        `Error occurred while reading store [${target.getName()}], unknown property [${name}].`
-      );
     },
     set: function(target: Store, name: string, value: any) {
       throwErrorOfStore(target);
@@ -83,6 +76,7 @@ export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
       if (taskDict[name] != null) {
         if (t.isCanceled() !== true && t.isDone() !== true) {
           if (taskDict[name].type === PropertyType.ASYNC_TASK) {
+            console.log("commit", name);
             reuni.commit();
           }
           return taskRelayProxy.bind(
@@ -105,9 +99,6 @@ export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
       if (name === ruKey) {
         return reuni;
       }
-      throw new Error(
-        `Error occurred while reading store [${target.getName()}] in task [${t.getId()}], unknown property [${name}].`
-      );
     },
     set: function(target: Store, name: string, value: any) {
       throwErrorOfStore(target);
@@ -250,6 +241,7 @@ export function asyncTaskProxy(
     let tid = t.getId();
     taskManager.finishTask(tid);
     store.deleteTask(taskName, tid);
+    console.log("done commit");
     reuni.commit();
   });
   (r as any)[tKey] = t;
@@ -371,17 +363,17 @@ export function buildStoreDict(careDict: ObserverCareDict, reuni: Reuni) {
   return dict;
 }
 
-export function isCbNeeded(
-  observer: Observer,
+export function isCareStoreDirty(
+  care: ObserverCareDict,
   dirtyNodes: Record<string, Record<string, Record<string, boolean>>>
 ) {
   let isCb = false;
-  let careNodeIdList = Object.keys(observer.care);
+  let careNodeIdList = Object.keys(care);
   for (let i = 0; i < careNodeIdList.length; i++) {
     let nodeId = careNodeIdList[i];
     let dirtyStores = dirtyNodes[nodeId];
     if (dirtyStores != null) {
-      let storeObserve = observer.care[nodeId];
+      let storeObserve = care[nodeId];
       let careStoreNameList = Object.keys(storeObserve);
       for (let j = 0; j < careStoreNameList.length; j++) {
         let storeName = careStoreNameList[j];
@@ -397,4 +389,49 @@ export function isCbNeeded(
     }
   }
   return false;
+}
+
+export function isStoreCare(
+  care: ObserverCareDict,
+  nodeId: string,
+  storeName: string
+) {
+  let careNodeIdList = Object.keys(care);
+  let isCare = false;
+  for (let i = 0; i < careNodeIdList.length; i++) {
+    let careNodeId = careNodeIdList[i];
+    if (careNodeId === nodeId) {
+      let careStoreNameList = Object.keys(care[careNodeId]);
+      for (let j = 0; j < careStoreNameList.length; j++) {
+        if (storeName === careStoreNameList[j]) {
+          isCare = true;
+          break;
+        }
+      }
+      break;
+    }
+  }
+  return isCare;
+}
+
+export function isCareStoreValid(
+  care: ObserverCareDict,
+  storeValidDict: StoreValidDict
+) {
+  let isCb = true;
+  let careNodeIdList = Object.keys(care);
+  for (let i = 0; i < careNodeIdList.length; i++) {
+    let nodeId = careNodeIdList[i];
+    let storeValid = storeValidDict[nodeId];
+    let storeCareDict = care[nodeId];
+    let storeNames = Object.keys(storeCareDict);
+    for (let i = 0; i < storeNames.length; i++) {
+      let storeObj = storeValid[storeNames[i]];
+      if (storeObj != null && storeObj.isValid() !== true) {
+        isCb = false;
+        break;
+      }
+    }
+  }
+  return isCb;
 }
