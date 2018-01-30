@@ -5,7 +5,8 @@ import {
   Observer,
   ObserverCareDict,
   NodeNameDict,
-  NodeThreadDict
+  NodeThreadDict,
+  NodeInitInfo
 } from "./types";
 import { buildNodeNameDict, buildNodeThreadDict } from "./utils";
 import { nodeCareParser } from "../api/utils";
@@ -26,15 +27,7 @@ export default class Node {
   private _threadDict: NodeThreadDict;
   private _thread: symbol;
 
-  constructor(
-    reuni: Reuni,
-    node: {
-      id: string;
-      thread: symbol;
-      name?: string;
-      parent?: Node | undefined | null;
-    }
-  ) {
+  constructor(reuni: Reuni, node: NodeInitInfo) {
     this._id = node.id;
     this._name = name;
     this._parent = node.parent;
@@ -121,7 +114,7 @@ export default class Node {
   addStore<S extends Record<string, {}>, A>(
     storeName: string,
     RawStore: new () => any,
-    observer: ObserverCareDict
+    storeCare: ObserverCareDict
   ) {
     if (this._stores[storeName] != null) {
       throw new Error(
@@ -130,7 +123,7 @@ export default class Node {
         }], store [${storeName}] already exist.`
       );
     }
-    let store = new Store(storeName, RawStore, observer, this);
+    let store = new Store(storeName, RawStore, storeCare, this);
     this._stores[storeName] = store;
     return store;
   }

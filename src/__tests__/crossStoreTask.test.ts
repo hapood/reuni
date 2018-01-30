@@ -9,12 +9,12 @@ it("Cross store task works sync", done => {
   node1.addStore(
     "mixedStore",
     MixedStore,
-    storeObserver(({ monoStore }) => {})
+    storeObserver(({ monoStore }) => ({ monoStore }))
   );
   node1.addStore("monoStore", MonoStore);
   let cbId = 0;
   node1.observe(
-    storeObserver(({ mixedStore }) => {}),
+    storeObserver(({ mixedStore }) => ({ mixedStore })),
     (isValid: boolean, entityDict: any) => {
       let mixedStore: MixedStore = null as any;
       if (isValid !== false) {
@@ -46,11 +46,11 @@ it("Cross store async task works", done => {
   node1.addStore(
     "mixedStore",
     MixedStore,
-    storeObserver(({ monoStore }) => {})
+    storeObserver(({ monoStore }) => ({ monoStore }))
   );
   let cbId = 0;
   node1.observe(
-    storeObserver(({ mixedStore }) => {}),
+    storeObserver(({ mixedStore }) => ({ mixedStore })),
     (isValid: boolean, entityDict: any) => {
       let mixedStore: MixedStore = null as any;
       if (isValid !== false) {

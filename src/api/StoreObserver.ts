@@ -2,125 +2,126 @@ import ObserveType from "./ObserveType";
 import { ThreadStoreCare, NameStoreCare, NodeCareCategory } from "./types";
 import { KeyCareItem } from "../core/types";
 
-export type StoreRename = {
-  (name: string): void;
-};
+export type StoreGetter<K extends string> = (
+  storeOptions: Record<string, KeyCare>
+) => Record<K, KeyCare>;
 
-export type StoreObserveOptions = {
-  includes: (keys: string[]) => { rename: StoreRename };
-  excludes: (keys: string[]) => { rename: StoreRename };
-  rename: StoreRename;
-};
+export class KeyCare {
+  private _keyCareItem: KeyCareItem;
+  private _name: string;
 
-export type StoreGetter = (
-  storeOptions: Record<string, StoreObserveOptions>
-) => void;
-
-function createStoreProxy(): [StoreObserveOptions, KeyCareItem] {
-  let target: KeyCareItem = {
+  constructor(name: string) {
+    this._keyCareItem = {
       type: ObserveType.ALL,
       keys: [],
       rename: null
-    },
-    handler = {
-      get: function(target: KeyCareItem, name: string) {
-        let setRename = (rename: string) => {
-          target.rename = rename;
-        };
-        let setKeys: any = (keys: string[]) => {
-          target.keys = keys;
-          return { rename: setRename };
-        };
-        setKeys.rename = setRename;
-        switch (name) {
-          case "includes":
-            target.type = ObserveType.INCLUDE;
-            return setKeys;
-          case "excludes":
-            target.type = ObserveType.EXCLUDE;
-            return setKeys;
-          case "rename":
-            target.type = ObserveType.EXCLUDE;
-            return setRename;
-        }
-        return null;
-      }
     };
-  return [new Proxy(target, handler) as any, target];
+    this._name = name;
+  }
+
+  getName() {
+    return this._name;
+  }
+
+  getKeyCareItem() {
+    return this._keyCareItem;
+  }
+
+  includes(keys: string[]) {
+    this._keyCareItem.type = ObserveType.INCLUDE;
+    this._keyCareItem.keys = keys;
+    return this;
+  }
+
+  excludes(keys: string[]) {
+    this._keyCareItem.type = ObserveType.EXCLUDE;
+    this._keyCareItem.keys = keys;
+    return this;
+  }
 }
 
-export default class StoreObserver {
+export default class StoreObserver<K extends string> {
   private _careCate: NodeCareCategory;
 
-  constructor(storeGetter?: StoreGetter) {
+  constructor(storeGetter?: StoreGetter<K>) {
     let target: NodeCareCategory = { names: [], threads: [] },
       handler = {
         get: function(target: NodeCareCategory, name: string) {
-          let [proxy, keyCareItem] = createStoreProxy();
-          target.threads.push({
-            name,
-            parent: 0,
-            store: keyCareItem,
-            rename: keyCareItem.rename
-          });
-          return proxy;
+          let keyCare = new KeyCare(name);
+          return keyCare;
         }
       };
-    if (storeGetter != null) {
-      storeGetter(new Proxy(target, handler) as any);
-    }
     this._careCate = target;
+    if (storeGetter != null) {
+      let mapper = storeGetter(new Proxy(target, handler) as any);
+      Object.entries(mapper).forEach(([newName, keyCare]: [string, KeyCare]) =>
+        this._careCate.threads.push({
+          name: keyCare.getName(),
+          parent: 0,
+          store: keyCare.getKeyCareItem(),
+          rename: newName
+        })
+      );
+    }
   }
 
   getCareCate() {
     return this._careCate;
   }
 
-  byName(nodeName: string, storeGetter: StoreGetter) {
+  byName<NK extends string>(
+    nodeName: string,
+    storeGetter: StoreGetter<NK>
+  ): StoreObserver<K & NK> {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
-        let [proxy, keyCareItem] = createStoreProxy();
-        target.names.push({
-          name,
-          nodeName,
-          store: keyCareItem,
-          rename: keyCareItem.rename
-        });
-        return proxy;
+        let keyCare = new KeyCare(name);
+        return keyCare;
       }
     };
     if (storeGetter != null) {
-      storeGetter(new Proxy(this._careCate, handler) as any);
+      let mapper = storeGetter(new Proxy(this._careCate, handler) as any);
+      Object.entries(mapper).forEach(([newName, keyCare]: [string, KeyCare]) =>
+        this._careCate.names.push({
+          name: keyCare.getName(),
+          nodeName,
+          store: keyCare.getKeyCareItem(),
+          rename: newName
+        })
+      );
     }
     return this;
   }
 
-  byThread(storeGetter: StoreGetter, parent: number = 1) {
+  byThread<TK extends string>(
+    storeGetter: StoreGetter<TK>,
+    parent: number = 1
+  ): StoreObserver<K & TK> {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
-        let [proxy, keyCareItem] = createStoreProxy();
-        target.threads.push({
-          name,
-          parent,
-          store: keyCareItem,
-          rename: keyCareItem.rename
-        });
-        return proxy;
+        let keyCare = new KeyCare(name);
+        return keyCare;
       }
     };
     if (storeGetter != null) {
-      {
-        storeGetter(new Proxy(this._careCate, handler) as any);
-      }
+      let mapper = storeGetter(new Proxy(this._careCate, handler) as any);
+      Object.entries(mapper).forEach(([newName, keyCare]: [string, KeyCare]) =>
+        this._careCate.threads.push({
+          name: keyCare.getName(),
+          parent,
+          store: keyCare.getKeyCareItem(),
+          rename: newName
+        })
+      );
     }
     return this;
   }
 }
 
-export function storeObserver(
-  storeGetter: (storeOptions: Record<string, StoreObserveOptions>) => void
-): StoreObserver;
-export function storeObserver(): StoreObserver;
+export function storeObserver<K extends string>(
+  storeGetter: StoreGetter<K>
+): StoreObserver<K>;
+export function storeObserver(): StoreObserver<never>;
 export function storeObserver(storeGetter?: any) {
   return new StoreObserver(storeGetter);
 }

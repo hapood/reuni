@@ -64,8 +64,8 @@ export default class Reuni {
 
   mountNode(node: {
     thread: symbol;
-    id?: string;
-    name?: string;
+    id?: string | undefined | null;
+    name?: string | undefined | null;
     parentId?: string | undefined | null;
   }) {
     let newNodeId: string | undefined | null = node.id,
@@ -116,7 +116,7 @@ export default class Reuni {
     nodeId: string,
     storeName: string,
     RawStore: new () => any,
-    observer: ObserverCareDict = {}
+    storeCare: ObserverCareDict = {}
   ) {
     let node = this._nodeDict[nodeId];
     if (node == null) {
@@ -129,7 +129,7 @@ export default class Reuni {
       storeValidDict = {};
       this._storeValidDict[nodeId] = storeValidDict;
     }
-    let store = node.ref.addStore(storeName, RawStore, observer);
+    let store = node.ref.addStore(storeName, RawStore, storeCare);
     storeValidDict[storeName] = store;
     let beValidObs = this._storeObs.addStoreRefresh(nodeId, storeName, this);
     beValidObs.every(ob => {

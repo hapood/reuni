@@ -32,7 +32,7 @@ export default class Store {
   constructor(
     storeName: string,
     RawStore: new () => any,
-    observer: ObserverCareDict,
+    storeCare: ObserverCareDict,
     node: Node
   ) {
     this._name = storeName;
@@ -85,12 +85,12 @@ export default class Store {
     this._observer = node
       .getReuni()
       .storeObserve(
-        observer,
+        storeCare,
         node.getId(),
         storeName,
         (isValid, entityDict) => {
           if (this._isValid == false && isValid !== false) {
-            let newStoreDict = buildStoreDict(observer, this._node.getReuni());
+            let newStoreDict = buildStoreDict(storeCare, this._node.getReuni());
             Object.keys(this._storeDict).forEach(key => {
               this._storeDict[key] = newStoreDict[key];
             });

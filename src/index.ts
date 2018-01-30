@@ -8,5 +8,6 @@ export {
   store,
   delay,
   ObserveType,
-  storeObserver
+  storeObserver,
+  StoreObserver
 } from "./api";

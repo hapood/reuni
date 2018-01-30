@@ -3,7 +3,8 @@ import {
   NodeNameDict,
   NodeThreadDict,
   ObserverCareDict,
-  StoreValidDict
+  StoreValidDict,
+  NodeInitInfo
 } from "./types";
 import PropertyType from "../api/PropertyType";
 import Store from "./Store";
@@ -244,12 +245,7 @@ export function asyncTaskProxy(
   return r;
 }
 
-export function buildNodeNameDict(node: {
-  id: string;
-  thread: symbol;
-  name?: string;
-  parent?: Node | undefined | null;
-}): NodeNameDict {
+export function buildNodeNameDict(node: NodeInitInfo): NodeNameDict {
   let oldNameDict,
     parentNode = node.parent,
     threadSymbol = node.thread,
@@ -284,12 +280,7 @@ export function buildNodeNameDict(node: {
   });
 }
 
-export function buildNodeThreadDict(node: {
-  id: string;
-  thread: symbol;
-  name?: string;
-  parent?: Node | undefined | null;
-}): NodeThreadDict {
+export function buildNodeThreadDict(node: NodeInitInfo): NodeThreadDict {
   let oldThreads,
     parentNode = node.parent,
     threadSymbol = node.thread;

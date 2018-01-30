@@ -75,3 +75,10 @@ export type DirtyNodes = Record<
   string,
   Record<string, Record<string, boolean>>
 >;
+
+export type NodeInitInfo={
+  id: string;
+  thread: symbol;
+  name?: string | undefined | null;
+  parent?: Node | undefined | null;
+}
