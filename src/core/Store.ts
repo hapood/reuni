@@ -84,21 +84,26 @@ export default class Store {
     this._entityState = null;
     this._observer = node
       .getReuni()
-      .storeObserve(observer, (isValid, entityDict) => {
-        if (this._isValid == false && isValid !== false) {
-          let newStoreDict = buildStoreDict(observer, this._node.getReuni());
-          Object.keys(this._storeDict).forEach(key => {
-            this._storeDict[key] = newStoreDict[key];
-          });
+      .storeObserve(
+        observer,
+        node.getId(),
+        storeName,
+        (isValid, entityDict) => {
+          if (this._isValid == false && isValid !== false) {
+            let newStoreDict = buildStoreDict(observer, this._node.getReuni());
+            Object.keys(this._storeDict).forEach(key => {
+              this._storeDict[key] = newStoreDict[key];
+            });
+          }
+          if (isValid !== false) {
+            Object.keys(this._storeDict).forEach(key => {
+              this.setValue(key, (entityDict as any)[key]);
+            });
+            this.commit();
+          }
+          this.setIsValid(isValid);
         }
-        if (isValid !== false) {
-          Object.keys(this._storeDict).forEach(key => {
-            this.setValue(key, (entityDict as any)[key]);
-          });
-          this.commit();
-        }
-        this.setIsValid(isValid);
-      });
+      );
   }
 
   getObserver() {

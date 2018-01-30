@@ -15,7 +15,6 @@ export default class Node {
   private _id: string;
   private _name: string;
   private _parent: Node | undefined | null;
-  private _observers: Observer[];
   private _children: Record<string, Node>;
   private _stores: Record<string, Store>;
   private _dirtyStores: Record<string, boolean>;
@@ -44,7 +43,6 @@ export default class Node {
     this._dirtyNodes = {};
     this._dirtyStores = {};
     this._dirtyStoreKeys = {};
-    this._observers = [];
     this._isDestroyed = false;
     this._reuni = reuni;
     this._nameDict = buildNodeNameDict(node);
@@ -80,28 +78,15 @@ export default class Node {
     return this._nameDict;
   }
 
-  destroy(): [string[], Observer[], Observer[]] {
-    let nodeObs: Observer[] = this._observers;
-    let storeObs: Observer[] = [];
+  destroy() {
     Object.values(this._stores).forEach(store => {
-      storeObs.push(store.getObserver());
       store.destroy();
     });
     let keys = Object.keys(this._children);
-    [keys, nodeObs, storeObs] = Object.entries(this._children)
-      .map(([key, child]) => child.destroy())
-      .reduce(
-        (prev, cur) => [
-          prev[0].concat(cur[0]),
-          prev[1].concat(cur[1]),
-          prev[2].concat(cur[2])
-        ],
-        [keys, nodeObs, storeObs]
-      );
     this._stores = {};
     this._children = {};
     this._isDestroyed = true;
-    return [keys, nodeObs, storeObs];
+    return keys;
   }
 
   commit() {
@@ -145,16 +130,13 @@ export default class Node {
         }], store [${storeName}] already exist.`
       );
     }
-    console.log("adding store")
     let store = new Store(storeName, RawStore, observer, this);
-    console.log("store added")
     this._stores[storeName] = store;
     return store;
   }
 
   observe(care: ObserverCareDict, cb: ObserverCB) {
-    let curObserver = this._reuni.observe(care, cb);
-    this._observers.push(curObserver);
+    let curObserver = this._reuni.observe(care, this._id, cb);
     return curObserver;
   }
 
@@ -218,7 +200,6 @@ export default class Node {
   }
 
   getEntity(storeName: string) {
-    console.log(storeName)
     return this._stores[storeName].getEntity();
   }
 

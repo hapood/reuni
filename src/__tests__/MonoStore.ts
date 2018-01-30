@@ -16,9 +16,7 @@ export default class MonoStore {
 
   @task.async
   async addAsync(num: number) {
-    console.log("3")
     await delay(100);
-    console.log("4")
     this.cnt += num;
   }
 

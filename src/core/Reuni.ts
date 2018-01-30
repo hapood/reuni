@@ -1,33 +1,29 @@
 import {
   NodeDict,
   NodeDictItem,
-  Observer,
   ObserverCareDict,
   StoreCareDict,
   KeyCareItem,
-  StoreValidDict
+  StoreValidDict,
+  Observer,
+  DirtyNodes
 } from "./types";
-import {
-  genId,
-  buildEntityDict,
-  isCareStoreDirty,
-  isCareStoreValid,
-  isStoreCare
-} from "./utils";
+import { genId } from "./utils";
 import Store from "./Store";
 import NodeAPI from "../api/NodeAPI";
 import TaskManager from "./TaskManager";
 import Node from "./Node";
 import TaskHandler from "src/api/TaskHandler";
 import { ObserverCB } from "../api/types";
+import ObManager from "./ObManager";
 
 export default class Reuni {
   private _nodeDict: NodeDict;
   private _rootId: string;
-  private _storeObs: Observer[];
-  private _observers: Observer[];
+  private _storeObs: ObManager;
+  private _observers: ObManager;
   private _storeValidDict: StoreValidDict;
-  private _dirtyNodes: Record<string, Record<string, Record<string, boolean>>>;
+  private _dirtyNodes: DirtyNodes;
   private _taskManager: TaskManager;
 
   constructor() {
@@ -45,8 +41,8 @@ export default class Reuni {
       }
     };
     this._taskManager = new TaskManager();
-    this._observers = [];
-    this._storeObs = [];
+    this._observers = new ObManager();
+    this._storeObs = new ObManager();
     this._dirtyNodes = {};
     this._storeValidDict = {};
   }
@@ -133,28 +129,23 @@ export default class Reuni {
       storeValidDict = {};
       this._storeValidDict[nodeId] = storeValidDict;
     }
-    console.log("add store", storeName);
     let store = node.ref.addStore(storeName, RawStore, observer);
     storeValidDict[storeName] = store;
-    this._storeObs.forEach(ob => {
-      let isCare = isStoreCare(ob.care, nodeId, storeName);
-      if (isCare !== false) {
-        let isCb = isCareStoreValid(ob.care, this._storeValidDict);
-        if (isCb !== false) {
-          ob.cb(true, buildEntityDict(ob.care, this));
-        }
-      }
-    });
-    this._observers.forEach(ob => {
-      let isCare = isStoreCare(ob.care, nodeId, storeName);
-      if (isCare !== false) {
-        let isCb = isCareStoreValid(ob.care, this._storeValidDict);
-        if (isCb !== false) {
-          ob.cb(true, buildEntityDict(ob.care, this));
-        }
-      }
+    let beValidObs = this._storeObs.addStoreRefresh(nodeId, storeName, this);
+    beValidObs.every(ob => {
+      return (
+        this._observers.addStoreNotify(
+          ob.nodeId,
+          ob.storeName as string,
+          this
+        ) != null
+      );
     });
     return store;
+  }
+
+  getStoreValidDict() {
+    return this._storeValidDict;
   }
 
   deleteStore(nodeId: string, storeName: string) {
@@ -166,23 +157,19 @@ export default class Reuni {
     }
     let store = node.ref.deleteStore(storeName) as Store;
     delete this._storeValidDict[nodeId][storeName];
-    this.storeUnobserve([store.getObserver()]);
-    this._observers.forEach(observer => {
-      let careNodeIdList = Object.keys(observer.care);
-      for (let i = 0; i < careNodeIdList.length; i++) {
-        let careNodeId = careNodeIdList[i];
-        if (careNodeId === nodeId) {
-          let storeCareDict = observer.care[careNodeId];
-          let careStoreNameList = Object.keys(storeCareDict);
-          for (let j = 0; j < careStoreNameList.length; j++) {
-            if (storeName === careStoreNameList[j]) {
-              observer.cb(false);
-              break;
-            }
-          }
-          break;
-        }
-      }
+    let storeOb = store.getObserver();
+    this.storeUnobserve(storeOb);
+    let beInvalidObs = this._storeObs
+      .deleteStoreRefresh(nodeId, storeName, this)
+      .concat(storeOb);
+    beInvalidObs.every(ob => {
+      return (
+        this._observers.deleteStoreNotify(
+          ob.nodeId,
+          ob.storeName as string,
+          this
+        ) != null
+      );
     });
     return store;
   }
@@ -194,7 +181,7 @@ export default class Reuni {
         `Error occurred while unmounting node, node [${nodeId}] does not exist.`
       );
     }
-    let [nodeKeys, nodeObs, storeObs] = node.ref.destroy();
+    let nodeKeys = node.ref.destroy();
     let parent = node.ref.getParent();
     if (parent != null) {
       parent.deleteChild(nodeId);
@@ -204,44 +191,30 @@ export default class Reuni {
     });
     delete this._nodeDict[nodeId];
     delete this._storeValidDict[nodeId];
-    this.storeUnobserve(storeObs);
-    this.unobserve(nodeObs);
+    this._storeObs.deleteNodeNotify(nodeId);
+    this._observers.deleteNodeNotify(nodeId);
     return node.ref;
   }
 
-  observe(care: ObserverCareDict, cb: ObserverCB) {
-    let curObserver: Observer = { care, cb };
-    this._observers.push(curObserver);
-    let isCB = isCareStoreValid(care, this._storeValidDict);
-    if (isCB !== false) {
-      cb(true, buildEntityDict(care, this));
-    }
-    return curObserver;
+  observe(care: ObserverCareDict, nodeId: string, cb: ObserverCB) {
+    return this._observers.observe(care, nodeId, null, cb, this);
   }
 
-  storeObserve(care: ObserverCareDict, cb: ObserverCB) {
-    let curObserver: Observer = { care, cb };
-    this._storeObs.push(curObserver);
-    let isCB = isCareStoreValid(care, this._storeValidDict);
-    if (isCB !== false) {
-      console.log(isCB, care);
-      cb(true, buildEntityDict(care, this));
-    }
-    return curObserver;
+  storeObserve(
+    care: ObserverCareDict,
+    nodeId: string,
+    storeName: string,
+    cb: ObserverCB
+  ) {
+    return this._storeObs.observe(care, nodeId, storeName, cb, this);
   }
 
-  storeUnobserve(observers: Observer[]) {
-    this._storeObs = this._storeObs.filter(ob => {
-      ob.cb(false);
-      return observers.includes(ob) !== true;
-    });
+  storeUnobserve(observer: Observer) {
+    this._storeObs.unobserve(observer);
   }
 
-  unobserve(observers: Observer[]) {
-    this._observers = this._observers.filter(ob => {
-      ob.cb(false);
-      return observers.includes(ob) !== true;
-    });
+  unobserve(observer: Observer) {
+    this._observers.unobserve(observer);
   }
 
   commit() {
@@ -254,19 +227,9 @@ export default class Reuni {
       );
     }
     rootNode.ref.commit();
-    this._storeObs.forEach(ob => {
-      let isCb = isCareStoreDirty(ob.care, this._dirtyNodes);
-      if (isCb !== false) {
-        ob.cb(true, buildEntityDict(ob.care, this));
-      }
-    });
+    this._storeObs.dirtyNotify(this._dirtyNodes, this);
     rootNode.ref.commit();
-    this._observers.forEach(ob => {
-      let isCb = isCareStoreDirty(ob.care, this._dirtyNodes);
-      if (isCb !== false) {
-        ob.cb(true, buildEntityDict(ob.care, this));
-      }
-    });
+    this._observers.dirtyNotify(this._dirtyNodes, this);
     this._dirtyNodes = {};
   }
 

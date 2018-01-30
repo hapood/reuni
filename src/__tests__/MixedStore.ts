@@ -7,12 +7,11 @@ export default class MixedStore {
   @task
   callOtherStore() {
     this.monoStore.add(2);
+    console.log("added")
   }
 
   @task.async
   async callOtherStoreAsync() {
-    console.log("1");
     await this.monoStore.addAsync(4);
-    console.log("2");
   }
 }

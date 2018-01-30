@@ -36,6 +36,8 @@ export type NodeItem = {
 };
 
 export type Observer = {
+  nodeId: string;
+  storeName: string | null | undefined;
   care: ObserverCareDict;
   cb: ObserverCB;
 };
@@ -68,3 +70,8 @@ export type NodeNameDict = {
 };
 
 export type NodeThreadDict = Record<any, string[]>;
+
+export type DirtyNodes = Record<
+  string,
+  Record<string, Record<string, boolean>>
+>;

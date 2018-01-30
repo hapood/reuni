@@ -1,13 +1,11 @@
 import {
   TaskDict,
-  KeyCareItem,
   NodeNameDict,
   NodeThreadDict,
   ObserverCareDict,
   StoreValidDict
 } from "./types";
 import PropertyType from "../api/PropertyType";
-import ObserveType from "../api/ObserveType";
 import Store from "./Store";
 import TaskManager from "./TaskManager";
 import TaskHandler, { tKey, ruKey } from "../api/TaskHandler";
@@ -246,35 +244,6 @@ export function asyncTaskProxy(
   return r;
 }
 
-function storeObserveInclude(
-  dirtyKeys: Record<string, boolean>,
-  keys: string[]
-) {
-  for (let k = 0; k < keys.length; k++) {
-    let key = keys[k];
-    if (dirtyKeys[key] != null) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function storeObserveMatch(
-  dirtyKeys: Record<string, boolean>,
-  keyObserve: KeyCareItem
-) {
-  switch (keyObserve.type) {
-    case ObserveType.ALL:
-      return true;
-    case ObserveType.INCLUDE:
-      return storeObserveInclude(dirtyKeys, keyObserve.keys);
-    case ObserveType.EXCLUDE:
-      return storeObserveInclude(dirtyKeys, keyObserve.keys);
-    default:
-      return false;
-  }
-}
-
 export function buildNodeNameDict(node: {
   id: string;
   thread: symbol;
@@ -341,16 +310,6 @@ export function buildNodeThreadDict(node: {
   });
 }
 
-export function buildEntityDict(careDict: ObserverCareDict, reuni: Reuni) {
-  let dict: any = {};
-  Object.entries(careDict).forEach(([nodeId, storeCareDict]) => {
-    Object.entries(storeCareDict).map(([storeName, careItem]) => {
-      dict[careItem.rename || storeName] = reuni.getEntity(nodeId, storeName);
-    });
-  });
-  return dict;
-}
-
 export function buildStoreDict(careDict: ObserverCareDict, reuni: Reuni) {
   let dict: any = {};
   Object.entries(careDict).forEach(([nodeId, storeCareDict]) => {
@@ -359,77 +318,4 @@ export function buildStoreDict(careDict: ObserverCareDict, reuni: Reuni) {
     });
   });
   return dict;
-}
-
-export function isCareStoreDirty(
-  care: ObserverCareDict,
-  dirtyNodes: Record<string, Record<string, Record<string, boolean>>>
-) {
-  let isCb = false;
-  let careNodeIdList = Object.keys(care);
-  for (let i = 0; i < careNodeIdList.length; i++) {
-    let nodeId = careNodeIdList[i];
-    let dirtyStores = dirtyNodes[nodeId];
-    if (dirtyStores != null) {
-      let storeObserve = care[nodeId];
-      let careStoreNameList = Object.keys(storeObserve);
-      for (let j = 0; j < careStoreNameList.length; j++) {
-        let storeName = careStoreNameList[j];
-        let dirtyKeys = dirtyStores[storeName];
-        if (dirtyKeys != null) {
-          let keyObserve = storeObserve[storeName];
-          isCb = storeObserveMatch(dirtyKeys, keyObserve);
-          if (isCb !== false) {
-            return true;
-          }
-        }
-      }
-    }
-  }
-  return false;
-}
-
-export function isStoreCare(
-  care: ObserverCareDict,
-  nodeId: string,
-  storeName: string
-) {
-  let careNodeIdList = Object.keys(care);
-  let isCare = false;
-  for (let i = 0; i < careNodeIdList.length; i++) {
-    let careNodeId = careNodeIdList[i];
-    if (careNodeId === nodeId) {
-      let careStoreNameList = Object.keys(care[careNodeId]);
-      for (let j = 0; j < careStoreNameList.length; j++) {
-        if (storeName === careStoreNameList[j]) {
-          isCare = true;
-          break;
-        }
-      }
-      break;
-    }
-  }
-  return isCare;
-}
-
-export function isCareStoreValid(
-  care: ObserverCareDict,
-  storeValidDict: StoreValidDict
-) {
-  let isCb = true;
-  let careNodeIdList = Object.keys(care);
-  for (let i = 0; i < careNodeIdList.length; i++) {
-    let nodeId = careNodeIdList[i];
-    let storeValid = storeValidDict[nodeId];
-    let storeCareDict = care[nodeId];
-    let storeNames = Object.keys(storeCareDict);
-    for (let i = 0; i < storeNames.length; i++) {
-      let storeObj = storeValid[storeNames[i]];
-      if (storeObj == null || storeObj.isValid() !== true) {
-        isCb = false;
-        break;
-      }
-    }
-  }
-  return isCb;
 }
