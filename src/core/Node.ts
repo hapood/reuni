@@ -1,36 +1,65 @@
-import Store from "./Store";
+﻿import Store from "./Store";
 import TaskManager from "../core/TaskManager";
 import Reuni from "./Reuni";
-import { Observer } from "./types";
+import {
+  Observer,
+  ObserverCareDict,
+  NodeNameDict,
+  NodeThreadDict
+} from "./types";
+import { buildNodeNameDict, buildNodeThreadDict } from "./utils";
+import { nodeCareParser } from "../api/utils";
+import { ObserverCB } from "../api/types";
 
-export default class NodeItem {
+export default class Node {
   private _id: string;
   private _name: string;
-  private _parent: NodeItem | undefined | null;
-  private _children: Record<string, NodeItem>;
+  private _parent: Node | undefined | null;
+  private _children: Record<string, Node>;
   private _stores: Record<string, Store>;
   private _dirtyStores: Record<string, boolean>;
   private _dirtyStoreKeys: Record<string, Record<string, boolean>>;
   private _dirtyNodes: Record<string, boolean>;
   private _isDestroyed: boolean;
-  private _arenaStore: Reuni;
+  private _reuni: Reuni;
+  private _nameDict: NodeNameDict;
+  private _threadDict: NodeThreadDict;
+  private _thread: symbol;
 
   constructor(
-    id: string,
-    name: string,
-    arenaStore: Reuni,
-    parent?: NodeItem
+    reuni: Reuni,
+    node: {
+      id: string;
+      thread: symbol;
+      name?: string;
+      parent?: Node | undefined | null;
+    }
   ) {
-    this._id = id;
+    this._id = node.id;
     this._name = name;
-    this._parent = parent;
+    this._parent = node.parent;
     this._stores = {};
     this._children = {};
     this._dirtyNodes = {};
     this._dirtyStores = {};
     this._dirtyStoreKeys = {};
     this._isDestroyed = false;
-    this._arenaStore = arenaStore;
+    this._reuni = reuni;
+    this._nameDict = buildNodeNameDict(node);
+    this._threadDict = buildNodeThreadDict(node);
+    this._thread = node.thread;
+  }
+
+  getThread() {
+    return this._thread;
+  }
+
+  getNameDict() {
+    return this._nameDict;
+  }
+
+  getThreadDict() {
+    return this._threadDict;
   }
 
   getId() {
@@ -45,26 +74,15 @@ export default class NodeItem {
     return this._parent;
   }
 
-  hasStores(storeNames: string[]) {
-    let nullIndex = storeNames.findIndex(
-      storeName => this._stores[storeName] == null
-    );
-    return nullIndex < 0 ? true : false;
+  getNodeNameDict() {
+    return this._nameDict;
   }
 
-  destroy(): null | string[] {
-    let observers: Observer[] = [];
+  destroy() {
     Object.values(this._stores).forEach(store => {
-      observers.push(store.getObserver());
       store.destroy();
     });
-    let nodeKeys = Object.keys(this._children);
-    let keys = Object.entries(this._children)
-      .map(([key, child]) => child.destroy())
-      .reduce(
-        (prev, cur) => (cur == null ? prev : (prev as string[]).concat(cur)),
-        nodeKeys
-      );
+    let keys = Object.keys(this._children);
     this._stores = {};
     this._children = {};
     this._isDestroyed = true;
@@ -82,7 +100,7 @@ export default class NodeItem {
     this._dirtyNodes = {};
     this._dirtyStores = {};
     this._dirtyStoreKeys = {};
-    this._arenaStore.updateDirtyNode(this._id, dirtyStores);
+    this._reuni.updateDirtyNode(this._id, dirtyStores);
   }
 
   addDirtyStores(storeName: string) {
@@ -102,7 +120,8 @@ export default class NodeItem {
 
   addStore<S extends Record<string, {}>, A>(
     storeName: string,
-    RawStore: new () => any
+    RawStore: new () => any,
+    observer: ObserverCareDict
   ) {
     if (this._stores[storeName] != null) {
       throw new Error(
@@ -111,9 +130,14 @@ export default class NodeItem {
         }], store [${storeName}] already exist.`
       );
     }
-    let store = new Store(storeName, RawStore, this);
+    let store = new Store(storeName, RawStore, observer, this);
     this._stores[storeName] = store;
     return store;
+  }
+
+  observe(care: ObserverCareDict, cb: ObserverCB) {
+    let curObserver = this._reuni.observe(care, this._id, cb);
+    return curObserver;
   }
 
   deleteStore(storeName: string) {
@@ -130,7 +154,7 @@ export default class NodeItem {
     return store;
   }
 
-  mountChild(id: string, node: NodeItem) {
+  addChild(id: string, node: Node) {
     if (this._children[id] != null) {
       throw new Error(
         `Error occurred while mounting node [${
@@ -142,7 +166,7 @@ export default class NodeItem {
     return node;
   }
 
-  unmountChild(nodeId: string) {
+  deleteChild(nodeId: string) {
     let child = this._children[nodeId];
     if (child == null) {
       throw new Error(
@@ -160,7 +184,7 @@ export default class NodeItem {
   }
 
   getTaskManager() {
-    return this._arenaStore.getTaskManager();
+    return this._reuni.getTaskManager();
   }
 
   getStores() {
@@ -171,31 +195,15 @@ export default class NodeItem {
     return this._stores;
   }
 
-  getArenaStore() {
-    return this._arenaStore;
+  getReuni() {
+    return this._reuni;
   }
 
-  subscribe(
-    care: Record<string, Record<string, string[]>>,
-    cb: (isValid: boolean) => void
-  ) {
-    let observer = this._arenaStore.subscribe(this._id, care, cb);
-    return observer;
+  getEntity(storeName: string) {
+    return this._stores[storeName].getEntity();
   }
 
-  getStoreEntity(storeName: string) {
-    let store = this._stores[storeName];
-    if (store == null) {
-      throw new Error(
-        `Error occurred while getting store, store [${storeName}] does not exist in node [${
-          this._id
-        }].`
-      );
-    }
-    return store.getEntity();
-  }
-
-  findStoreEntity(storeName: string, nodeName = "$") {
-    return this._arenaStore.getStoreEntity(this._id, nodeName, storeName);
+  getStore(storeName: string) {
+    return this._stores[storeName];
   }
 }

@@ -1,17 +1,9 @@
 import PropertyType from "./PropertyType";
 import { getProtoTypeCache } from "./decorator";
 
-function store(storeName: string, nodeName: string = "$") {
-  return (target: any, propertyKey: string) => {
-    let cache = getProtoTypeCache(target);
-    cache[propertyKey] = {
-      type: PropertyType.SCENE,
-      value: {
-        store: storeName,
-        node: nodeName
-      }
-    };
-  };
-}
+const cacheItem = { type: PropertyType.STORE, value: null };
 
-export default store as any;
+export default function store(target: any, propertyKey: string) {
+  let cache = getProtoTypeCache(target);
+  cache[propertyKey] = cacheItem;
+}

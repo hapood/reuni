@@ -4,9 +4,9 @@ import TaskStatus from "./TaskStatus";
 
 export const tKey = Symbol("tid");
 
-export const asKey = Symbol("arenaStore");
+export const ruKey = Symbol("reuni");
 
-export default class Task {
+export default class TaskHandler {
   private taskItem: TaskItem;
   private taskManager: TaskManager;
 
@@ -33,7 +33,7 @@ export default class Task {
     }
   }
 
-  subscribe(cb: (tStatus: TaskStatus) => void) {
+  observe(cb: (tStatus: TaskStatus) => void) {
     if (this.taskItem.isCanceled !== true && this.taskItem.isDone !== true) {
       let observers = this.taskItem.observers;
       observers.push(cb);

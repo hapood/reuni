@@ -1,10 +1,12 @@
 export { createReuni, Reuni, Node, Store } from "./core";
 export {
-  Node as NodeAPI,
-  observable,
+  NodeAPI,
+  value,
   task,
-  TaskDescriptor,
+  TaskHandler,
   getTaskDescriptor,
   store,
-  delay
+  delay,
+  ObserveType,
+  storeObserver
 } from "./api";

@@ -1,12 +1,17 @@
-import { NodeDict, TaskItem, TaskDict, TaskDictItem } from "./types";
+import {
+  TaskDict,
+  NodeNameDict,
+  NodeThreadDict,
+  ObserverCareDict,
+  StoreValidDict
+} from "./types";
 import PropertyType from "../api/PropertyType";
 import Store from "./Store";
 import TaskManager from "./TaskManager";
-import Task from "../api/TaskDescriptor";
-import { tKey, asKey } from "../api/TaskDescriptor";
+import TaskHandler, { tKey, ruKey } from "../api/TaskHandler";
 import TaskStatus from "../api/TaskStatus";
 import Reuni from "src/core/Reuni";
-import NodeItem from "./Node";
+import Node from "./Node";
 import TaskCancelError from "../api/TaskCancelError";
 import StoreNotExistError from "../api/StoreNotExistError";
 import StoreNotAvailableError from "../api/StoreNotAvailableError";
@@ -20,19 +25,15 @@ export function genId() {
   );
 }
 
-export function buildStoreEntity(
-  store: Store,
-  state: any,
-  stateDict: Record<string, boolean>,
-  arenaStore: Reuni
-): any {
+export function buildStoreEntity(store: Store, reuni: Reuni): any {
+  let state = store.getCommittedState();
+  let valueDict = store.getValueDict();
+  let taskDict = store.getTaskDict();
   let handler = {
     get: function(target: Store, name: string | symbol) {
-      throwErrorOfStore(target);
-      if (stateDict[name] != null) {
+      if (valueDict[name] != null) {
         return state[name];
       }
-      let taskDict = target.getTaskDict();
       if (taskDict[name] != null) {
         if (taskDict[name].type === PropertyType.TASK) {
           return taskProxy.bind(null, name, taskDict[name].task, target);
@@ -44,13 +45,10 @@ export function buildStoreEntity(
       if (storeDict[name] != null) {
         return target.getState()[name];
       }
-      throw new Error(
-        `Error occurred while reading store [${target.getName()}], unknown property [${name}].`
-      );
     },
     set: function(target: Store, name: string, value: any) {
       throwErrorOfStore(target);
-      if (stateDict[name] != null) {
+      if (valueDict[name] != null) {
         target.setValue(name, value);
         return true;
       }
@@ -63,50 +61,47 @@ export function buildStoreEntity(
   return entity as any;
 }
 
-function buildTaskEntity(store: Store, arenaStore: Reuni, t: Task) {
+export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
   let handler = {
     get: function(target: Store, name: string | symbol) {
       throwErrorOfStore(target);
       let state = target.getState();
-      let stateDict = target.getStateDict();
-      if (stateDict[name] != null) {
+      let valueDict = target.getValueDict();
+      if (valueDict[name] != null) {
         return state[name];
       }
       let taskDict = target.getTaskDict();
       if (taskDict[name] != null) {
         if (t.isCanceled() !== true && t.isDone() !== true) {
           if (taskDict[name].type === PropertyType.ASYNC_TASK) {
-            arenaStore.commit();
+            reuni.commit();
           }
           return taskRelayProxy.bind(
             null,
             taskDict[name].task,
             target,
-            arenaStore,
+            reuni,
             t
           );
         }
         return null;
       }
-      let storeDict = target.getStoreDict();
-      if (storeDict[name] != null) {
-        return state[name];
+      let innerStore = target.getStoreDict()[name];
+      if (innerStore != null) {
+        return innerStore.getTaskEntity(t);
       }
       if (name === tKey) {
         return t;
       }
-      if (name === asKey) {
-        return arenaStore;
+      if (name === ruKey) {
+        return reuni;
       }
-      throw new Error(
-        `Error occurred while reading store [${target.getName()}] in task [${t.getId()}], unknown property [${name}].`
-      );
     },
     set: function(target: Store, name: string, value: any) {
       throwErrorOfStore(target);
       let state = target.getState();
-      let stateDict = target.getStateDict();
-      if (stateDict[name] != null) {
+      let valueDict = target.getValueDict();
+      if (valueDict[name] != null) {
         if (t.isCanceled() !== true && t.isDone() !== true) {
           target.setValue(name, value);
           return true;
@@ -128,12 +123,12 @@ function buildTaskEntity(store: Store, arenaStore: Reuni, t: Task) {
 function taskRelayProxy(
   f: () => void,
   store: Store,
-  arenaStore: Reuni,
-  t: Task,
+  reuni: Reuni,
+  t: TaskHandler,
   ...args: any[]
 ) {
   if (store.isValid() !== false) {
-    let entity = buildTaskEntity(store, arenaStore, t);
+    let entity = buildTaskEntity(store, reuni, t);
     return f.apply(entity, args);
   }
   return null;
@@ -142,12 +137,12 @@ function taskRelayProxy(
 function asyncTaskRelayProxy(
   f: () => void,
   store: Store,
-  arenaStore: Reuni,
-  t: Task,
+  reuni: Reuni,
+  t: TaskHandler,
   ...args: any[]
 ) {
   if (store.isValid() !== false) {
-    let entity = buildTaskEntity(store, arenaStore, t);
+    let entity = buildTaskEntity(store, reuni, t);
     return f.apply(entity, args);
   }
   return null;
@@ -169,15 +164,15 @@ export function taskProxy(
   ...args: any[]
 ) {
   throwErrorOfStore(store);
-  let arenaStore = store.getNode().getArenaStore();
-  let taskManager = arenaStore.getTaskManager();
-  let t = startStoreTask(store, taskName, taskManager, arenaStore);
-  let entity = buildTaskEntity(store, arenaStore, t);
+  let reuni = store.getNode().getReuni();
+  let taskManager = reuni.getTaskManager();
+  let t = startStoreTask(store, taskName, taskManager, reuni);
+  let entity = buildTaskEntity(store, reuni, t);
   let r;
   try {
     r = f.apply(entity, args);
     taskManager.finishTask(t.getId());
-    arenaStore.commit();
+    reuni.commit();
     return r;
   } catch (e) {
     if (e instanceof TaskCancelError) {
@@ -195,21 +190,25 @@ function startStoreTask(
   store: Store,
   taskName: string,
   taskManager: TaskManager,
-  arenaStore: Reuni
+  reuni: Reuni
 ) {
   let t = taskManager.startTask();
   store.addTask(taskName, t);
-  t.subscribe((tStatus: TaskStatus) => {
+  t.observe((tStatus: TaskStatus) => {
     if (process.env.NODE_ENV !== "production") {
       if (tStatus === TaskStatus.CANCELED) {
-        console.info(`Task [${taskName}] is canceled, taskId: ${t.getId()}.`);
+        console.info(
+          `TaskHandler [${taskName}] is canceled, taskId: ${t.getId()}.`
+        );
       } else {
-        console.info(`Task [${taskName}] is done, taskId: ${t.getId()}.`);
+        console.info(
+          `TaskHandler [${taskName}] is done, taskId: ${t.getId()}.`
+        );
       }
     }
     if (tStatus === TaskStatus.CANCELED) {
       store.deleteTask(taskName, t.getId());
-      arenaStore.commit();
+      reuni.commit();
     }
   });
   return t;
@@ -222,10 +221,10 @@ export function asyncTaskProxy(
   ...args: any[]
 ) {
   throwErrorOfStore(store);
-  let arenaStore = store.getNode().getArenaStore();
-  let taskManager = arenaStore.getTaskManager();
-  let t = startStoreTask(store, taskName, taskManager, arenaStore);
-  let entity = buildTaskEntity(store, arenaStore, t);
+  let reuni = store.getNode().getReuni();
+  let taskManager = reuni.getTaskManager();
+  let t = startStoreTask(store, taskName, taskManager, reuni);
+  let entity = buildTaskEntity(store, reuni, t);
   let r = (f.apply(entity, args) as Promise<any>).catch((e: any) => {
     if (e instanceof TaskCancelError) {
       if (process.env.NODE_ENV !== "production") {
@@ -239,8 +238,84 @@ export function asyncTaskProxy(
     let tid = t.getId();
     taskManager.finishTask(tid);
     store.deleteTask(taskName, tid);
-    arenaStore.commit();
+    reuni.commit();
   });
   (r as any)[tKey] = t;
   return r;
+}
+
+export function buildNodeNameDict(node: {
+  id: string;
+  thread: symbol;
+  name?: string;
+  parent?: Node | undefined | null;
+}): NodeNameDict {
+  let oldNameDict,
+    parentNode = node.parent,
+    threadSymbol = node.thread,
+    nodeName = node.name;
+  if (parentNode != null) {
+    oldNameDict = parentNode.getNameDict();
+  } else {
+    oldNameDict = {};
+  }
+  if (nodeName == null) {
+    return Object.assign({}, oldNameDict);
+  }
+  let nameItem = oldNameDict[nodeName];
+  let newNameItem;
+  if (nameItem == null) {
+    newNameItem = {
+      symbol: threadSymbol,
+      ids: [node.id]
+    };
+  } else {
+    if (nameItem.symbol !== threadSymbol) {
+      throw new Error(
+        `Error occurred generating node name dict, name [${nodeName}] is conflict.`
+      );
+    }
+    newNameItem = Object.assign({}, nameItem, {
+      ids: [node.id].concat(nameItem.ids)
+    });
+  }
+  return Object.assign({}, oldNameDict, {
+    [nodeName]: newNameItem
+  });
+}
+
+export function buildNodeThreadDict(node: {
+  id: string;
+  thread: symbol;
+  name?: string;
+  parent?: Node | undefined | null;
+}): NodeThreadDict {
+  let oldThreads,
+    parentNode = node.parent,
+    threadSymbol = node.thread;
+  if (parentNode != null) {
+    oldThreads = parentNode.getThreadDict();
+  } else {
+    oldThreads = {};
+  }
+  let threadItem = oldThreads[threadSymbol];
+  let newThreadItem;
+  if (threadItem == null) {
+    newThreadItem = [node.id];
+  } else {
+    newThreadItem = [node.id].concat(threadItem);
+  }
+  return Object.assign({}, oldThreads, {
+    [threadSymbol]: newThreadItem
+  });
+}
+
+export function buildStoreDict(careDict: ObserverCareDict, reuni: Reuni) {
+  let dict: any = {};
+  Object.entries(careDict).forEach(([nodeId, storeCareDict]) => {
+    Object.entries(storeCareDict).map(([storeName, careItem]) => {
+      dict[careItem.rename || storeName] = reuni.getStore(nodeId, storeName);
+    });
+  });
+  return dict;
 }

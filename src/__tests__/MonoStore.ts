@@ -1,8 +1,8 @@
-import { observable, task, delay } from "src";
+import { value, task, delay } from "src";
 
 export default class MonoStore {
-  @observable name = "test";
-  @observable cnt = 0;
+  @value name = "test";
+  @value cnt = 0;
 
   @task
   add(num: number) {

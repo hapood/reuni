@@ -1,7 +1,7 @@
-import { observable, task } from "src";
+import { value, task } from "src";
 
 export default class MockStore {
-  @observable observable = "test";
+  @value observable = "test";
 
   @task
   task() {}
