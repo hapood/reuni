@@ -1,6 +1,6 @@
 {
   "name": "reuni",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Dynamic state container for JavaScript apps",
   "scripts": {
     "prettier": "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\"",
