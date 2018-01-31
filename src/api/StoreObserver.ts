@@ -2,9 +2,7 @@ import ObserveType from "./ObserveType";
 import { ThreadStoreCare, NameStoreCare, NodeCareCategory } from "./types";
 import { KeyCareItem } from "../core/types";
 
-export type StoreGetter<K extends string> = (
-  storeOptions: Record<string, KeyCare>
-) => Record<K, KeyCare>;
+export type StoreGetter<K> = (storeOptions: Record<string, KeyCare>) => K;
 
 export class KeyCare {
   private _keyCareItem: KeyCareItem;
@@ -40,7 +38,7 @@ export class KeyCare {
   }
 }
 
-export default class StoreObserver<K extends string> {
+export default class StoreObserver<K> {
   private _careCate: NodeCareCategory;
 
   constructor(storeGetter?: StoreGetter<K>) {
@@ -69,10 +67,10 @@ export default class StoreObserver<K extends string> {
     return this._careCate;
   }
 
-  byName<NK extends string>(
+  byName<NK>(
     nodeName: string,
     storeGetter: StoreGetter<NK>
-  ): StoreObserver<K & NK> {
+  ): StoreObserver<K & Record<keyof NK, any>> {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
         let keyCare = new KeyCare(name);
@@ -93,10 +91,10 @@ export default class StoreObserver<K extends string> {
     return this;
   }
 
-  byThread<TK extends string>(
+  byThread<TK>(
     storeGetter: StoreGetter<TK>,
     parent: number = 1
-  ): StoreObserver<K & TK> {
+  ): StoreObserver<K & Record<keyof TK, any>> {
     let handler = {
       get: function(target: NodeCareCategory, name: string) {
         let keyCare = new KeyCare(name);
@@ -118,9 +116,9 @@ export default class StoreObserver<K extends string> {
   }
 }
 
-export function storeObserver<K extends string>(
+export function storeObserver<K>(
   storeGetter: StoreGetter<K>
-): StoreObserver<K>;
+): StoreObserver<Record<keyof K, any>>;
 export function storeObserver(): StoreObserver<never>;
 export function storeObserver(storeGetter?: any) {
   return new StoreObserver(storeGetter);
