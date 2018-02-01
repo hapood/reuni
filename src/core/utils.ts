@@ -69,21 +69,18 @@ export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
       }
       let taskDict = target.getTaskDict();
       if (taskDict[name] != null) {
-        if (t.isCanceled() !== true && t.isDone() !== true) {
-          if (taskDict[name].type === PropertyType.ASYNC_TASK) {
-            reuni.commit();
-          }
-          let taskFunc = forkTask.bind(
-            null,
-            taskDict[name].task,
-            target,
-            reuni,
-            t
-          );
-          taskFunc[tKey] = [name, target, t];
-          return taskFunc;
+        if (taskDict[name].type === PropertyType.ASYNC_TASK) {
+          reuni.commit();
         }
-        return null;
+        let taskFunc = forkTask.bind(
+          null,
+          taskDict[name].task,
+          target,
+          reuni,
+          t
+        );
+        taskFunc[tKey] = [name, target, t];
+        return taskFunc;
       }
       let innerStore = target.getStoreDict()[name];
       if (innerStore != null) {

@@ -1,4 +1,4 @@
-import { createReuni, Node, getTaskDescriptor, storeObserver } from "src";
+import { createReuni, getTaskDescriptor, storeObserver } from "src";
 import MonoStore from "./MonoStore";
 
 it("Store works with observe", done => {
