@@ -1,18 +1,12 @@
 import Node from "./Node";
-import {
-  buildStoreEntity,
-  taskProxy,
-  asyncTaskProxy,
-  buildTaskEntity,
-  buildStoreDict
-} from "./utils";
+import { buildStoreEntity, buildTaskEntity, buildStoreDict } from "./utils";
 import TaskManager from "./TaskManager";
 import TaskHandler from "../api/TaskHandler";
 import { TaskDict, Observer, ObserverCareDict } from "./types";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
 import { getCache } from "../api/decorator";
-import Reuni from "src/core/Reuni";
+import Reuni from "./Reuni";
 
 export default class Store {
   private _name: string;

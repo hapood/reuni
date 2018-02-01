@@ -1,4 +1,4 @@
-export { createReuni, Reuni, Node, Store } from "./core";
+export { createReuni, Reuni, Node, Store, spawnTask } from "./core";
 export {
   NodeAPI,
   value,

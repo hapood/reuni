@@ -9,9 +9,9 @@ import {
 import PropertyType from "../api/PropertyType";
 import Store from "./Store";
 import TaskManager from "./TaskManager";
-import TaskHandler, { tKey, ruKey } from "../api/TaskHandler";
+import TaskHandler, { tKey } from "../api/TaskHandler";
 import TaskStatus from "../api/TaskStatus";
-import Reuni from "src/core/Reuni";
+import Reuni from "./Reuni";
 import Node from "./Node";
 import TaskCancelError from "../api/TaskCancelError";
 import StoreNotExistError from "../api/StoreNotExistError";
@@ -31,16 +31,12 @@ export function buildStoreEntity(store: Store, reuni: Reuni): any {
   let valueDict = store.getValueDict();
   let taskDict = store.getTaskDict();
   let handler = {
-    get: function(target: Store, name: string | symbol) {
+    get: function(target: Store, name: string) {
       if (valueDict[name] != null) {
         return state[name];
       }
       if (taskDict[name] != null) {
-        if (taskDict[name].type === PropertyType.TASK) {
-          return taskProxy.bind(null, name, taskDict[name].task, target);
-        } else {
-          return asyncTaskProxy.bind(null, name, taskDict[name].task, target);
-        }
+        return preIgnite(target, name);
       }
       let storeDict = target.getStoreDict();
       if (storeDict[name] != null) {
@@ -77,25 +73,21 @@ export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
           if (taskDict[name].type === PropertyType.ASYNC_TASK) {
             reuni.commit();
           }
-          return taskRelayProxy.bind(
+          let taskFunc = forkTask.bind(
             null,
             taskDict[name].task,
             target,
             reuni,
             t
           );
+          taskFunc[tKey] = [name, target, t];
+          return taskFunc;
         }
         return null;
       }
       let innerStore = target.getStoreDict()[name];
       if (innerStore != null) {
         return innerStore.getTaskEntity(t);
-      }
-      if (name === tKey) {
-        return t;
-      }
-      if (name === ruKey) {
-        return reuni;
       }
     },
     set: function(target: Store, name: string, value: any) {
@@ -121,21 +113,7 @@ export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
   return entity as any;
 }
 
-function taskRelayProxy(
-  f: () => void,
-  store: Store,
-  reuni: Reuni,
-  t: TaskHandler,
-  ...args: any[]
-) {
-  if (store.isValid() !== false) {
-    let entity = buildTaskEntity(store, reuni, t);
-    return f.apply(entity, args);
-  }
-  return null;
-}
-
-function asyncTaskRelayProxy(
+function forkTask(
   f: () => void,
   store: Store,
   reuni: Reuni,
@@ -158,42 +136,12 @@ function throwErrorOfStore(store: Store) {
   }
 }
 
-export function taskProxy(
-  taskName: string,
-  f: () => void,
-  store: Store,
-  ...args: any[]
-) {
-  throwErrorOfStore(store);
-  let reuni = store.getNode().getReuni();
-  let taskManager = reuni.getTaskManager();
-  let t = startStoreTask(store, taskName, taskManager, reuni);
-  let entity = buildTaskEntity(store, reuni, t);
-  let r;
-  try {
-    r = f.apply(entity, args);
-    taskManager.finishTask(t.getId());
-    reuni.commit();
-    return r;
-  } catch (e) {
-    if (e instanceof TaskCancelError) {
-      if (process.env.NODE_ENV !== "production") {
-        console.info(e);
-      }
-    } else {
-      throw e;
-    }
-  }
-  return null;
-}
-
-function startStoreTask(
+function registerStoreTask(
   store: Store,
   taskName: string,
-  taskManager: TaskManager,
-  reuni: Reuni
+  reuni: Reuni,
+  t: TaskHandler
 ) {
-  let t = taskManager.startTask();
   store.addTask(taskName, t);
   t.observe((tStatus: TaskStatus) => {
     if (process.env.NODE_ENV !== "production") {
@@ -215,17 +163,65 @@ function startStoreTask(
   return t;
 }
 
-export function asyncTaskProxy(
-  taskName: string,
-  f: () => Promise<any>,
+export function preIgnite(
   store: Store,
+  taskName: string,
+  parentTask?: TaskHandler
+) {
+  let taskDict = store.getTaskDict();
+  if (taskDict[taskName].type === PropertyType.TASK) {
+    return syncTaskIgnite.bind(null, store, taskName, parentTask);
+  } else {
+    return asyncTaskIgnite.bind(null, store, taskName, parentTask);
+  }
+}
+
+function syncTaskIgnite(
+  store: Store,
+  taskName: string,
+  parentTask: TaskHandler | null | undefined,
   ...args: any[]
 ) {
   throwErrorOfStore(store);
   let reuni = store.getNode().getReuni();
   let taskManager = reuni.getTaskManager();
-  let t = startStoreTask(store, taskName, taskManager, reuni);
+  let t = taskManager.startTask(parentTask);
+  registerStoreTask(store, taskName, reuni, t);
   let entity = buildTaskEntity(store, reuni, t);
+  let taskDict = store.getTaskDict();
+  let f = taskDict[taskName].task;
+  let r;
+  try {
+    r = f.apply(entity, args);
+    taskManager.finishTask(t.getId());
+    reuni.commit();
+    return r;
+  } catch (e) {
+    if (e instanceof TaskCancelError) {
+      if (process.env.NODE_ENV !== "production") {
+        console.info(e);
+      }
+    } else {
+      throw e;
+    }
+  }
+  return null;
+}
+
+function asyncTaskIgnite(
+  store: Store,
+  taskName: string,
+  parentTask: TaskHandler | null | undefined,
+  ...args: any[]
+) {
+  throwErrorOfStore(store);
+  let reuni = store.getNode().getReuni();
+  let taskManager = reuni.getTaskManager();
+  let t = taskManager.startTask(parentTask);
+  registerStoreTask(store, taskName, reuni, t);
+  let entity = buildTaskEntity(store, reuni, t);
+  let taskDict = store.getTaskDict();
+  let f = taskDict[taskName].task;
   let r = (f.apply(entity, args) as Promise<any>).catch((e: any) => {
     if (e instanceof TaskCancelError) {
       if (process.env.NODE_ENV !== "production") {

@@ -13,7 +13,7 @@ import Store from "./Store";
 import NodeAPI from "../api/NodeAPI";
 import TaskManager from "./TaskManager";
 import Node from "./Node";
-import TaskHandler from "src/api/TaskHandler";
+import TaskHandler from "../api/TaskHandler";
 import { ObserverCB } from "../api/types";
 import ObManager from "./ObManager";
 
