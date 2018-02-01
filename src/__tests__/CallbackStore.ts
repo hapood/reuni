@@ -7,7 +7,6 @@ export default class CallbackStore {
   @task
   addAsync(num: number) {
     setTimeout(() => {
-      console.log(this.addAsync)
       spawnTask(this.callback)(num);
     }, 10);
   }
