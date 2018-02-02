@@ -38,7 +38,7 @@ export class KeyCare {
   }
 }
 
-export default class StoreObserver<K> {
+export default class StoreObserver<K = {}> {
   private _careCate: NodeCareCategory;
 
   constructor(storeGetter?: StoreGetter<K>) {
@@ -119,7 +119,7 @@ export default class StoreObserver<K> {
 export function storeObserver<K>(
   storeGetter: StoreGetter<K>
 ): StoreObserver<Record<keyof K, any>>;
-export function storeObserver(): StoreObserver<never>;
+export function storeObserver(): StoreObserver<{}>;
 export function storeObserver(storeGetter?: any) {
   return new StoreObserver(storeGetter);
 }

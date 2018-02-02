@@ -47,6 +47,7 @@ export function buildStoreEntity(store: Store, reuni: Reuni): any {
       throwErrorOfStore(target);
       if (valueDict[name] != null) {
         target.setValue(name, value);
+        reuni.commit();
         return true;
       }
       throw new Error(
