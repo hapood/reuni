@@ -139,8 +139,8 @@ export default class ObManager {
   private _observers: Observer[] = [];
 
   _addStoreValidFilter(nodeId: string, storeName: string, reuni: Reuni) {
-    if (this._invalidObs.length === 0) return null;
     let beValidObs: Observer[] = [];
+    if (this._invalidObs.length === 0) return beValidObs;
     let newInvalidObs: Observer[] = [];
     let tmpObs = this._invalidObs.filter(ob => {
       let isCare = isStoreCare(ob.care, nodeId, storeName);
@@ -158,15 +158,13 @@ export default class ObManager {
     if (beValidObs.length !== 0) {
       this._invalidObs = newInvalidObs;
       this._observers = this._observers.concat(beValidObs);
-      return beValidObs;
-    } else {
-      return null;
     }
+    return beValidObs;
   }
 
   _deleteStoreValidFilter(nodeId: string, storeName: string, reuni: Reuni) {
-    if (this._observers.length === 0) return null;
     let beInvalidObs: Observer[] = [];
+    if (this._observers.length === 0) return beInvalidObs;
     let newValidObs: Observer[] = [];
     let tmpObs = this._observers.filter(ob => {
       let isCare = isStoreCare(ob.care, nodeId, storeName);
@@ -181,41 +179,38 @@ export default class ObManager {
     if (beInvalidObs.length !== 0) {
       this._invalidObs = this._invalidObs.concat(beInvalidObs);
       this._observers = newValidObs;
-      return beInvalidObs;
-    } else {
-      return null;
     }
+    return beInvalidObs;
   }
 
   addStoreRefresh(nodeId: string, storeName: string, reuni: Reuni) {
     let tmpBeValidObs = this._addStoreValidFilter(nodeId, storeName, reuni);
-    let beValidObs = tmpBeValidObs == null ? [] : tmpBeValidObs;
+    let beValidObs = tmpBeValidObs;
     if (tmpBeValidObs != null) {
       tmpBeValidObs.every(ob => {
         ob.cb(true, buildEntityDict(ob.care, reuni));
-        let childBeValidStores = this.addStoreRefresh(
-          ob.nodeId,
-          ob.storeName as string,
-          reuni
-        );
-        if (childBeValidStores != null) {
-          beValidObs = beValidObs.concat(childBeValidStores);
-          return true;
-        } else {
-          return false;
+        let childBeValidStores: Observer[] = [];
+        if (ob.storeName != null) {
+          childBeValidStores = this.addStoreRefresh(
+            ob.nodeId,
+            ob.storeName,
+            reuni
+          );
         }
+        if (childBeValidStores.length !== 0) {
+          beValidObs = beValidObs.concat(childBeValidStores);
+        }
+        return this._invalidObs.length !== 0;
       });
     }
     return beValidObs;
   }
 
-  addStoreNotify(nodeId: string, storeName: string, reuni: Reuni) {
+  enableStoreNotify(nodeId: string, storeName: string, reuni: Reuni) {
     let beValidObs = this._addStoreValidFilter(nodeId, storeName, reuni);
-    if (beValidObs != null) {
-      beValidObs.forEach(ob => {
-        ob.cb(true, buildEntityDict(ob.care, reuni));
-      });
-    }
+    beValidObs.forEach(ob => {
+      ob.cb(true, buildEntityDict(ob.care, reuni));
+    });
   }
 
   deleteStoreRefresh(nodeId: string, storeName: string, reuni: Reuni) {
@@ -228,23 +223,24 @@ export default class ObManager {
     if (tmpBeInvalidObs != null) {
       tmpBeInvalidObs.every(ob => {
         ob.cb(false);
-        let childBeInvalidStores = this.deleteStoreRefresh(
-          ob.nodeId,
-          ob.storeName as string,
-          reuni
-        );
-        if (childBeInvalidStores != null) {
-          beInvalidObs = beInvalidObs.concat(childBeInvalidStores);
-          return true;
-        } else {
-          return false;
+        let childBeInvalidStores: Observer[] = [];
+        if (ob.storeName != null) {
+          childBeInvalidStores = this.deleteStoreRefresh(
+            ob.nodeId,
+            ob.storeName,
+            reuni
+          );
         }
+        if (childBeInvalidStores.length !== 0) {
+          beInvalidObs = beInvalidObs.concat(childBeInvalidStores);
+        }
+        return this._observers.length !== 0;
       });
     }
     return beInvalidObs;
   }
 
-  deleteNodeNotify(nodeId: string) {
+  umountNodeNotify(nodeId: string) {
     this._observers = this._observers.filter(ob => {
       if (isCareNode(ob.care, nodeId) === true) {
         ob.cb(false);
@@ -258,7 +254,15 @@ export default class ObManager {
     });
   }
 
-  deleteStoreNotify(nodeId: string, storeName: string, reuni: Reuni) {
+  getObs() {
+    return this._observers;
+  }
+
+  getInvalidObs() {
+    return this._invalidObs;
+  }
+
+  disableStoreNotify(nodeId: string, storeName: string, reuni: Reuni) {
     let beInalidObs = this._deleteStoreValidFilter(nodeId, storeName, reuni);
     if (beInalidObs != null) {
       beInalidObs.forEach(ob => {

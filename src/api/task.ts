@@ -1,7 +1,8 @@
 import PropertyType from "./PropertyType";
 import { getProtoTypeCache } from "./decorator";
+import { CacheItem } from "./types";
 
-const taskCacheItem = { type: PropertyType.TASK, value: null };
+const taskCacheItem: CacheItem = { type: PropertyType.TASK, value: null };
 const asyncTaskCacheItem = { type: PropertyType.ASYNC_TASK, value: null };
 
 export type TaskDecorator = {

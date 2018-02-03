@@ -1,4 +1,5 @@
 import ObserveType from "./ObserveType";
+import PropertyType from "./PropertyType";
 import { KeyCareItem } from "../core/types";
 
 export type ThreadStoreCare = {
@@ -26,4 +27,9 @@ export type InjectSource = {
 
 export type ObserverCB = {
   (isValid: boolean, entityDict?: Record<string, any>): void;
+};
+
+export type CacheItem = {
+  type: PropertyType;
+  value: any;
 };

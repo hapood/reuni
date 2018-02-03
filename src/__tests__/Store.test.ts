@@ -12,7 +12,7 @@ it("Store works with observe", done => {
       monoStore: monoStore.includes(["cnt"])
     })),
     (isValid: boolean, entityDict: any) => {
-      let store: MonoStore = null as any;
+      let store!: MonoStore;
       if (isValid !== false) {
         store = entityDict.monoStore;
       }

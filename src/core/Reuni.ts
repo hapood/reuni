@@ -133,13 +133,10 @@ export default class Reuni {
     storeValidDict[storeName] = store;
     let beValidObs = this._storeObs.addStoreRefresh(nodeId, storeName, this);
     beValidObs.every(ob => {
-      return (
-        this._observers.addStoreNotify(
-          ob.nodeId,
-          ob.storeName as string,
-          this
-        ) != null
-      );
+      if (ob.storeName != null) {
+        this._observers.enableStoreNotify(ob.nodeId, ob.storeName, this) != null;
+      }
+      return this._observers.getInvalidObs().length !== 0;
     });
     return store;
   }
@@ -155,7 +152,7 @@ export default class Reuni {
         `Error occurred while deleting store, node [${nodeId}] does not exist.`
       );
     }
-    let store = node.ref.deleteStore(storeName) as Store;
+    let store = node.ref.deleteStore(storeName);
     delete this._storeValidDict[nodeId][storeName];
     let storeOb = store.getObserver();
     this.storeUnobserve(storeOb);
@@ -163,13 +160,11 @@ export default class Reuni {
       .deleteStoreRefresh(nodeId, storeName, this)
       .concat(storeOb);
     beInvalidObs.every(ob => {
-      return (
-        this._observers.deleteStoreNotify(
-          ob.nodeId,
-          ob.storeName as string,
-          this
-        ) != null
-      );
+      if (ob.storeName != null) {
+        this._observers.disableStoreNotify(ob.nodeId, ob.storeName, this) !=
+          null;
+      }
+      return this._observers.getObs().length !== 0;
     });
     return store;
   }
@@ -191,8 +186,8 @@ export default class Reuni {
     });
     delete this._nodeDict[nodeId];
     delete this._storeValidDict[nodeId];
-    this._storeObs.deleteNodeNotify(nodeId);
-    this._observers.deleteNodeNotify(nodeId);
+    this._storeObs.umountNodeNotify(nodeId);
+    this._observers.umountNodeNotify(nodeId);
     return node.ref;
   }
 

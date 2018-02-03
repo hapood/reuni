@@ -12,7 +12,7 @@ it("Store works with spawn", done => {
       callbackStore: callbackStore.includes(["cnt"])
     })),
     (isValid: boolean, entityDict: any) => {
-      let store: CallbackStore = null as any;
+      let store!: CallbackStore;
       if (isValid !== false) {
         store = entityDict.callbackStore;
       }
