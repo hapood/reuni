@@ -1,6 +1,6 @@
 {
   "name": "reuni",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.4",
   "description": "Dynamic state container for JavaScript apps",
   "scripts": {
     "prettier": "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\"",
@@ -33,6 +33,7 @@
     "rollup-plugin-filesize": "^1.5.0",
     "rollup-plugin-node-resolve": "^3.0.2",
     "ts-jest": "^22.0.1",
+    "tslib": "^1.9.0",
     "typescript": "^2.6.2"
   },
   "jest": {

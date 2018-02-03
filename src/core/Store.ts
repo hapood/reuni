@@ -1,18 +1,12 @@
 import Node from "./Node";
-import {
-  buildStoreEntity,
-  taskProxy,
-  asyncTaskProxy,
-  buildTaskEntity,
-  buildStoreDict
-} from "./utils";
+import { buildStoreEntity, buildTaskEntity, buildStoreDict } from "./utils";
 import TaskManager from "./TaskManager";
 import TaskHandler from "../api/TaskHandler";
 import { TaskDict, Observer, ObserverCareDict } from "./types";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
 import { getCache } from "../api/decorator";
-import Reuni from "src/core/Reuni";
+import Reuni from "./Reuni";
 
 export default class Store {
   private _name: string;
@@ -32,7 +26,7 @@ export default class Store {
   constructor(
     storeName: string,
     RawStore: new () => any,
-    observer: ObserverCareDict,
+    storeCare: ObserverCareDict,
     node: Node
   ) {
     this._name = storeName;
@@ -85,12 +79,12 @@ export default class Store {
     this._observer = node
       .getReuni()
       .storeObserve(
-        observer,
+        storeCare,
         node.getId(),
         storeName,
         (isValid, entityDict) => {
           if (this._isValid == false && isValid !== false) {
-            let newStoreDict = buildStoreDict(observer, this._node.getReuni());
+            let newStoreDict = buildStoreDict(storeCare, this._node.getReuni());
             Object.keys(this._storeDict).forEach(key => {
               this._storeDict[key] = newStoreDict[key];
             });

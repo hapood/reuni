@@ -10,7 +10,7 @@ export default class TaskManager {
     this.taskDict = {};
   }
 
-  startTask(): TaskHandler {
+  startTask(parentTask?: TaskHandler | null | undefined): TaskHandler {
     let tranId;
     while (tranId == null) {
       tranId = genId();
@@ -22,7 +22,8 @@ export default class TaskManager {
       id: tranId,
       isDone: false,
       isCanceled: false,
-      observers: []
+      observers: [],
+      parentId: parentTask != null ? parentTask.getId() : null
     };
     this.taskDict[tranId] = taskItem;
     return new TaskHandler(taskItem, this);

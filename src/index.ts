@@ -1,4 +1,4 @@
-export { createReuni, Reuni, Node, Store } from "./core";
+export { createReuni, Reuni, Node, Store, spawnTask } from "./core";
 export {
   NodeAPI,
   value,
@@ -8,5 +8,6 @@ export {
   store,
   delay,
   ObserveType,
-  storeObserver
+  storeObserver,
+  StoreObserver
 } from "./api";

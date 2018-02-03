@@ -4,8 +4,6 @@ import TaskStatus from "./TaskStatus";
 
 export const tKey = Symbol("tid");
 
-export const ruKey = Symbol("reuni");
-
 export default class TaskHandler {
   private taskItem: TaskItem;
   private taskManager: TaskManager;

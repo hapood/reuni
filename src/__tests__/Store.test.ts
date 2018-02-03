@@ -1,4 +1,4 @@
-import { createReuni, Node, getTaskDescriptor, storeObserver } from "src";
+import { createReuni, getTaskDescriptor, storeObserver } from "src";
 import MonoStore from "./MonoStore";
 
 it("Store works with observe", done => {
@@ -8,9 +8,9 @@ it("Store works with observe", done => {
   node1.addStore("monoStore", MonoStore);
   let cbId = 0;
   node1.observe(
-    storeObserver(({ monoStore }) => {
-      monoStore.includes(["cnt"]);
-    }),
+    storeObserver(({ monoStore }) => ({
+      monoStore: monoStore.includes(["cnt"])
+    })),
     (isValid: boolean, entityDict: any) => {
       let store: MonoStore = null as any;
       if (isValid !== false) {
@@ -50,7 +50,7 @@ it("Store works with cancel", done => {
   let cbId = 0;
   node1.addStore("monoStore", MonoStore);
   node1.observe(
-    storeObserver(({ monoStore }) => {}),
+    storeObserver(({ monoStore }) => ({ monoStore })),
     (isValid: boolean, entityDict: any) => {
       let store: MonoStore = entityDict.monoStore;
       switch (cbId) {

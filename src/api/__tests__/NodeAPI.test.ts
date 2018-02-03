@@ -16,7 +16,11 @@ it("tests node add/delete Store", () => {
   let reuni = createReuni();
   let node1 = reuni.mountNode({ thread: thread });
   node1.addStore("store1", MockStore);
-  node1.addStore("store2", MockStore, storeObserver(({ store1 }) => {}));
+  node1.addStore(
+    "store2",
+    MockStore,
+    storeObserver(({ store1 }) => ({ store1 }))
+  );
   let keys = Object.keys(reuni.getNode(node1.getId()).getStores());
   expect(keys.length).toBe(2);
   node1.deleteStore("store2");

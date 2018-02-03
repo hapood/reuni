@@ -7,14 +7,14 @@ class MockStore {
 }
 
 it("tests StoreObserver", () => {
-  let observer = storeObserver(({ storeInclude, storeExclude, store }) => {
-    storeInclude.includes(["keyInclude"]).rename("storeI");
-    storeExclude.excludes(["keyExclude"]);
-  })
-    .byName("parent", ({ parentStore }) => {
-      parentStore.rename("father");
-    })
-    .byThread(({ threadStore }) => {});
+  let observer = storeObserver(({ storeInclude, storeExclude, store }) => ({
+    storeI: storeInclude.includes(["keyInclude"]),
+    keyExclude: storeExclude.excludes(["keyExclude"])
+  }))
+    .byName("parent", ({ parentStore }) => ({
+      father: parentStore
+    }))
+    .byThread(({ threadStore }) => ({ threadStore }));
   let reuni = createReuni();
   let thread = Symbol("thread1");
   let node1 = reuni.mountNode({ thread, name: "parent" });

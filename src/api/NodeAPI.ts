@@ -34,7 +34,7 @@ export default class NodeAPI {
     return this._nodeItem.isDestroyed();
   }
 
-  observe(observer: StoreObserver, cb: ObserverCB) {
+  observe<K extends string>(observer: StoreObserver<K>, cb: ObserverCB) {
     if (this._nodeItem.isDestroyed() !== true) {
       let care = observer.getCareCate();
       let careDict = nodeCareParser(care, this._nodeItem);
@@ -45,16 +45,16 @@ export default class NodeAPI {
     return this;
   }
 
-  addStore(
+  addStore<K extends string>(
     storeName: string,
     RawStore: new () => any,
-    observer?: StoreObserver
+    storeOb?: StoreObserver<K> | null | undefined
   ) {
     if (this._nodeItem.isDestroyed() !== true) {
       let nodeItem = this._nodeItem;
       let careDict;
-      if (observer != null) {
-        careDict = nodeCareParser(observer.getCareCate(), this._nodeItem);
+      if (storeOb != null) {
+        careDict = nodeCareParser(storeOb.getCareCate(), this._nodeItem);
       }
       let store = this._nodeItem
         .getReuni()
