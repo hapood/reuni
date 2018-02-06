@@ -163,9 +163,7 @@ export default class Reuni {
   unmoutNode(nodeId: string) {
     let node = this._nodeDict[nodeId];
     if (node == null) {
-      throw new Error(
-        `Error occurred while unmounting node, node [${nodeId}] does not exist.`
-      );
+      return null
     }
     let nodeKeys = node.ref.destroy();
     let parent = node.ref.getParent();
@@ -179,7 +177,7 @@ export default class Reuni {
     delete this._storeValidDict[nodeId];
     this._storeObs.umountNodeNotify(nodeId);
     this._observers.umountNodeNotify(nodeId);
-    return node.ref;
+    return true;
   }
 
   observe(care: ObserverCareDict, nodeId: string, cb: ObserverCB) {

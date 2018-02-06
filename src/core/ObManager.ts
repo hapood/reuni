@@ -1,4 +1,4 @@
-import { Observer, StoreObserver, StoreValidDict, DirtyNodes } from "./types";
+import { Observer, StoreObserver, StoreValidDict } from "./types";
 import ObserveType from "../api/ObserveType";
 import Reuni from "./Reuni";
 import {

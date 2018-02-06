@@ -53,7 +53,7 @@ export function buildStoreEntity(store: Store, reuni: Reuni): any {
         return true;
       }
       throw new Error(
-        `Error occurred while writting store [${target.getName()}], property [${name}] is not observable.`
+        `Error occurred while writting store [${target.getName()}], property [${name}] is not value.`
       );
     }
   };
@@ -105,7 +105,7 @@ export function buildTaskEntity(store: Store, reuni: Reuni, t: TaskHandler) {
         );
       }
       throw new Error(
-        `Error occurred while writting store [${target.getName()}] in task [${t.getId()}], property [${name}] is not observable.`
+        `Error occurred while writting store [${target.getName()}] in task [${t.getId()}], property [${name}] is not value.`
       );
     }
   };

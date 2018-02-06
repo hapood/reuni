@@ -105,6 +105,9 @@ export default class Node {
 
   addDirtyNode(nodeId: string) {
     this._dirtyNodes[nodeId] = true;
+    if (this._parent != null) {
+      this._parent.addDirtyNode(this._id);
+    }
   }
 
   updateDirtyStore(storeName: string, keyList: Record<string, boolean>) {
