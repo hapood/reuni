@@ -38,10 +38,13 @@ export type NodeItem = {
 
 export type Observer = {
   nodeId: string;
-  storeName: string | null | undefined;
   care: ObserverCareDict;
   cb: ObserverCB;
 };
+
+export type StoreObserver = {
+  storeName: string;
+} & Observer;
 
 export type KeyCareItem = {
   type: ObserveType;

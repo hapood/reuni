@@ -2,7 +2,7 @@ import Node from "./Node";
 import { buildStoreEntity, buildTaskEntity, buildStoreDict } from "./utils";
 import TaskManager from "./TaskManager";
 import TaskHandler from "../api/TaskHandler";
-import { TaskDict, Observer, ObserverCareDict } from "./types";
+import { TaskDict, StoreObserver, ObserverCareDict } from "./types";
 import PropertyType from "../api/PropertyType";
 import ObserveType from "../api/ObserveType";
 import { getCache } from "../api/decorator";
@@ -19,7 +19,7 @@ export default class Store {
   private _entity: any;
   private _taskDesrDict: Record<string, Record<string, TaskHandler>>;
   private _isValid: boolean;
-  private _observer: Observer;
+  private _observer: StoreObserver;
   private _storeDict: Record<string, Store>;
   private _entityState: any;
 

@@ -1,9 +1,10 @@
 import PropertyType from "./PropertyType";
+import { CacheItem } from "./types";
 
 export const decoratorCachekey = Symbol("decoratorCache");
 
 export function getCache(target: any) {
-  return target[decoratorCachekey];
+  return target[decoratorCachekey] as Record<string, CacheItem>;
 }
 
 export function getProtoTypeCache(target: any) {

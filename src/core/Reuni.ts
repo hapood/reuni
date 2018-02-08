@@ -6,6 +6,7 @@ import {
   KeyCareItem,
   StoreValidDict,
   Observer,
+  StoreObserver,
   DirtyNodes
 } from "./types";
 import { genId } from "./utils";
@@ -15,13 +16,14 @@ import TaskManager from "./TaskManager";
 import Node from "./Node";
 import TaskHandler from "../api/TaskHandler";
 import { ObserverCB } from "../api/types";
-import ObManager from "./ObManager";
+import NodeObManager from "./NodeObManager";
+import StoreObManager from "./StoreObManager";
 
 export default class Reuni {
   private _nodeDict: NodeDict;
   private _rootId: string;
-  private _storeObs: ObManager;
-  private _observers: ObManager;
+  private _storeObs: StoreObManager;
+  private _observers: NodeObManager;
   private _storeValidDict: StoreValidDict;
   private _dirtyNodes: DirtyNodes;
   private _taskManager: TaskManager;
@@ -41,8 +43,8 @@ export default class Reuni {
       }
     };
     this._taskManager = new TaskManager();
-    this._observers = new ObManager();
-    this._storeObs = new ObManager();
+    this._observers = new NodeObManager();
+    this._storeObs = new StoreObManager();
     this._dirtyNodes = {};
     this._storeValidDict = {};
   }
@@ -132,15 +134,7 @@ export default class Reuni {
     let store = node.ref.addStore(storeName, RawStore, storeCare);
     storeValidDict[storeName] = store;
     let beValidObs = this._storeObs.addStoreRefresh(nodeId, storeName, this);
-    beValidObs.every(ob => {
-      return (
-        this._observers.addStoreNotify(
-          ob.nodeId,
-          ob.storeName as string,
-          this
-        ) != null
-      );
-    });
+    this._observers.enableStores(beValidObs, this);
     return store;
   }
 
@@ -155,31 +149,21 @@ export default class Reuni {
         `Error occurred while deleting store, node [${nodeId}] does not exist.`
       );
     }
-    let store = node.ref.deleteStore(storeName) as Store;
+    let store = node.ref.deleteStore(storeName);
     delete this._storeValidDict[nodeId][storeName];
     let storeOb = store.getObserver();
     this.storeUnobserve(storeOb);
     let beInvalidObs = this._storeObs
       .deleteStoreRefresh(nodeId, storeName, this)
       .concat(storeOb);
-    beInvalidObs.every(ob => {
-      return (
-        this._observers.deleteStoreNotify(
-          ob.nodeId,
-          ob.storeName as string,
-          this
-        ) != null
-      );
-    });
+    this._observers.disableStores(beInvalidObs, this);
     return store;
   }
 
   unmoutNode(nodeId: string) {
     let node = this._nodeDict[nodeId];
     if (node == null) {
-      throw new Error(
-        `Error occurred while unmounting node, node [${nodeId}] does not exist.`
-      );
+      return null
     }
     let nodeKeys = node.ref.destroy();
     let parent = node.ref.getParent();
@@ -191,13 +175,13 @@ export default class Reuni {
     });
     delete this._nodeDict[nodeId];
     delete this._storeValidDict[nodeId];
-    this._storeObs.deleteNodeNotify(nodeId);
-    this._observers.deleteNodeNotify(nodeId);
-    return node.ref;
+    this._storeObs.umountNodeNotify(nodeId);
+    this._observers.umountNodeNotify(nodeId);
+    return true;
   }
 
   observe(care: ObserverCareDict, nodeId: string, cb: ObserverCB) {
-    return this._observers.observe(care, nodeId, null, cb, this);
+    return this._observers.observe(care, nodeId, cb, this);
   }
 
   storeObserve(
@@ -209,7 +193,7 @@ export default class Reuni {
     return this._storeObs.observe(care, nodeId, storeName, cb, this);
   }
 
-  storeUnobserve(observer: Observer) {
+  storeUnobserve(observer: StoreObserver) {
     this._storeObs.unobserve(observer);
   }
 

@@ -16,7 +16,7 @@ it("Cross store task works sync", done => {
   node1.observe(
     storeObserver(({ mixedStore }) => ({ mixedStore })),
     (isValid: boolean, entityDict: any) => {
-      let mixedStore: MixedStore = null as any;
+      let mixedStore!: MixedStore;
       if (isValid !== false) {
         mixedStore = entityDict.mixedStore;
       }
