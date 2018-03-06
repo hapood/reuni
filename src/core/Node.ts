@@ -78,6 +78,7 @@ export default class Node {
     let keys = Object.keys(this._children);
     this._stores = {};
     this._children = {};
+    this._dirtyNodes = {};
     this._isDestroyed = true;
     return keys;
   }
@@ -171,6 +172,7 @@ export default class Node {
         }], child [${nodeId}] does not exist.`
       );
     }
+    delete this._dirtyNodes[nodeId];
     delete this._children[nodeId];
     return child;
   }
