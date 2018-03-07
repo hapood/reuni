@@ -1,6 +1,6 @@
 {
   "name": "reuni",
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-beta.2",
   "description": "Dynamic state container for JavaScript apps",
   "scripts": {
     "prettier": "prettier --write \"**/*.js\" \"**/*.jsx\" \"**/*.tsx\" \"**/*.ts\"",
@@ -26,13 +26,13 @@
   "homepage": "https://github.com/hapood/reuni#readme",
   "dependencies": {},
   "devDependencies": {
-    "@types/jest": "^22.1.2",
-    "jest": "^22.3.0",
-    "prettier": "^1.10.2",
-    "rollup": "^0.56.0",
+    "@types/jest": "^22.2.0",
+    "jest": "^22.4.2",
+    "prettier": "^1.11.1",
+    "rollup": "^0.56.4",
     "rollup-plugin-filesize": "^1.5.0",
     "rollup-plugin-node-resolve": "^3.0.3",
-    "ts-jest": "^22.0.4",
+    "ts-jest": "^22.4.1",
     "tslib": "^1.9.0",
     "typescript": "^2.7.2"
   },

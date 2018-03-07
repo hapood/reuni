@@ -163,17 +163,17 @@ export default class Reuni {
   unmoutNode(nodeId: string) {
     let node = this._nodeDict[nodeId];
     if (node == null) {
-      return null
+      return null;
     }
-    let nodeKeys = node.ref.destroy();
+    let nodeKeys = node.ref.destroy().concat(nodeId);
     let parent = node.ref.getParent();
     if (parent != null) {
       parent.deleteChild(nodeId);
     }
     nodeKeys.forEach(key => {
       delete this._nodeDict[key];
+      delete this._dirtyNodes[key];
     });
-    delete this._nodeDict[nodeId];
     delete this._storeValidDict[nodeId];
     this._storeObs.umountNodeNotify(nodeId);
     this._observers.umountNodeNotify(nodeId);
